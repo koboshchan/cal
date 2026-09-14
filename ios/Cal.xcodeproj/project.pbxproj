@@ -30,6 +30,7 @@
 		6F718078C62350627D280AF6 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		822F01A242036D110085B8E6 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		A19773992201D69911409BF0 /* AdminView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminView.swift; sourceTree = "<group>"; };
+		A719C7A770D468E3DA885A34 /* Cal.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Cal.entitlements; sourceTree = "<group>"; };
 		B105CB89D296EEEDAFC8FC3A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B7FC7C3E89F52EA3B73B1446 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -93,6 +94,7 @@
 		D7C71F3E44A56E524F2CB49D /* Cal */ = {
 			isa = PBXGroup;
 			children = (
+				A719C7A770D468E3DA885A34 /* Cal.entitlements */,
 				B105CB89D296EEEDAFC8FC3A /* Info.plist */,
 				EBDD6E6BF23E85D339B8AF71 /* App */,
 				8652B3EBE3B5AC9DCB154323 /* Models */,
@@ -143,6 +145,12 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					A69956B317AAA0AFBF7210C2 = {
+						DevelopmentTeam = 9L8K7C9GMH;
+						ProvisioningStyle = Automatic;
+					};
+				};
 			};
 			buildConfigurationList = C59723774BC568FE7AAF894E /* Build configuration list for PBXProject "Cal" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -190,8 +198,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Cal/Cal.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9L8K7C9GMH;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Cal/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -329,8 +340,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Cal/Cal.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9L8K7C9GMH;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Cal/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
