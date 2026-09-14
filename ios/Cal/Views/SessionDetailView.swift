@@ -73,9 +73,15 @@ struct SessionDetailView: View {
 
                 if session.status == "awaiting_input", let questions = session.pendingQuestions {
                     Section {
+                        // Keying on the question batch's identity forces SwiftUI to
+                        // recreate this view (resetting its @State) whenever a new
+                        // batch of questions arrives, instead of reusing the same
+                        // instance with a stale stepIndex that could be out of range
+                        // for a shorter new batch.
                         QuestionWizardView(questions: questions, submitting: answering) { answers in
                             submitAnswers(answers)
                         }
+                        .id(questions.map(\.toolCallId).joined(separator: ","))
                     }
                 }
 

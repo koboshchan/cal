@@ -48,14 +48,6 @@ struct QuestionWizardView: View {
             }
         }
         .padding(.vertical, 4)
-        // Reset local wizard state if the question set itself changes
-        // (e.g. a later /continue step surfaces a fresh batch of questions).
-        .onChange(of: questions.map(\.toolCallId)) {
-            stepIndex = 0
-            answers = [:]
-            customText = ""
-            usingOther = false
-        }
     }
 
     private func submitCustomText() {
