@@ -62,7 +62,10 @@ struct NewSessionView: View {
             loadIcs(from: url)
         }
         .navigationDestination(item: $createdSessionId) { sessionId in
-            SessionDetailView(sessionId: sessionId)
+            // onDone: dismiss THIS view's own sheet, not just pop back to
+            // the form — SessionDetailView is pushed inside this sheet's
+            // NavigationStack, so its own dismiss() would only do the latter.
+            SessionDetailView(sessionId: sessionId, onDone: { dismiss() })
         }
     }
 

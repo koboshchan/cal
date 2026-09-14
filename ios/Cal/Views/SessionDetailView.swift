@@ -8,6 +8,13 @@ private struct EditingEvent: Identifiable {
 
 struct SessionDetailView: View {
     let sessionId: String
+    /// When this view is pushed inside another sheet's own NavigationStack
+    /// (the "New schedule" flow), the local `dismiss()` only pops back to
+    /// that form — it doesn't close the sheet itself. Pass the enclosing
+    /// sheet's dismiss action here so "Done" closes the whole popup instead
+    /// of leaving it open on the form. Left nil for the plain "tap a past
+    /// session from the list" navigation, where popping back is correct.
+    var onDone: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var session: SessionDetail?
@@ -114,7 +121,13 @@ struct SessionDetailView: View {
         .toolbar {
             if session?.status == "done" || session?.status == "error" {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    Button("Done") {
+                        if let onDone {
+                            onDone()
+                        } else {
+                            dismiss()
+                        }
+                    }
                 }
             }
         }
