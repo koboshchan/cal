@@ -59,6 +59,19 @@ enum APIClient {
         return wrapper.sessions
     }
 
+    static func renameSession(id: String, title: String) async throws -> SessionDetail {
+        var request = try await authorizedRequest(path: "/api/sessions/\(id)", method: "PATCH")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try encoder.encode(["title": title])
+        return try await send(request)
+    }
+
+    static func deleteSession(id: String) async throws {
+        let request = try await authorizedRequest(path: "/api/sessions/\(id)", method: "DELETE")
+        struct OK: Codable { let ok: Bool }
+        let _: OK = try await send(request)
+    }
+
     static func createSession(textPrompt: String, icsData: Data?, imageData: Data?) async throws -> SessionDetail {
         var request = try await authorizedRequest(path: "/api/sessions", method: "POST")
         let boundary = "Boundary-\(UUID().uuidString)"

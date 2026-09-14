@@ -7,6 +7,8 @@ struct HomeView: View {
     @State private var errorMessage: String?
     @State private var showingNewSession = false
     @State private var showingSettings = false
+    @State private var renamingSession: SessionSummary?
+    @State private var renameText = ""
 
     var body: some View {
         NavigationStack {
@@ -22,6 +24,18 @@ struct HomeView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
+                    }
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) { deleteSession(session) } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                        Button {
+                            renameText = session.title
+                            renamingSession = session
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
+                        .tint(.orange)
                     }
                 }
             }
@@ -55,9 +69,18 @@ struct HomeView: View {
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
             }
+            .alert("Rename schedule", isPresented: renamingSessionBinding, actions: {
+                TextField("Title", text: $renameText)
+                Button("Cancel", role: .cancel) { renamingSession = nil }
+                Button("Save") { renameSession() }
+            })
             .task { await reloadAsync() }
             .refreshable { await reloadAsync() }
         }
+    }
+
+    private var renamingSessionBinding: Binding<Bool> {
+        Binding(get: { renamingSession != nil }, set: { if !$0 { renamingSession = nil } })
     }
 
     private func reload() {
@@ -73,6 +96,32 @@ struct HomeView: View {
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    private func renameSession() {
+        guard let session = renamingSession else { return }
+        let title = renameText.trimmingCharacters(in: .whitespaces)
+        renamingSession = nil
+        guard !title.isEmpty else { return }
+        Task {
+            do {
+                _ = try await APIClient.renameSession(id: session.id, title: title)
+                await reloadAsync()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func deleteSession(_ session: SessionSummary) {
+        Task {
+            do {
+                try await APIClient.deleteSession(id: session.id)
+                sessions.removeAll { $0.id == session.id }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 }
