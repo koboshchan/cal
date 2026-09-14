@@ -38,7 +38,7 @@ struct SessionDetailView: View {
                 }
 
                 if session.status == "running" {
-                    Section { HStack { ProgressView(); Text("Working on it…") } }
+                    Section { HStack { ProgressView(); Text(session.currentStage ?? "Working on it…") } }
                 }
 
                 if session.status == "error", let error = session.error {
@@ -126,10 +126,14 @@ struct SessionDetailView: View {
         .task { await pollUntilSettled() }
     }
 
+    /// Drives multi-stage generation forward: each call both advances the
+    /// agent by one step and reports the result, so this doubles as both the
+    /// "do the work" and "poll for status" mechanism — there's no background
+    /// worker making progress on its own between calls.
     private func pollUntilSettled() async {
         while !Task.isCancelled {
             do {
-                let latest = try await APIClient.session(id: sessionId)
+                let latest = try await APIClient.continueSession(id: sessionId)
                 session = latest
                 loadError = nil
                 if latest.status != "running" { return }
@@ -137,7 +141,7 @@ struct SessionDetailView: View {
                 loadError = error.localizedDescription
                 return
             }
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: .seconds(1))
         }
     }
 

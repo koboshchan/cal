@@ -65,11 +65,28 @@ export interface AgentSessionDoc {
   userPrompt: string;
   imageNote?: string;
   inputEvents: NormalizedEvent[];
+  /** IANA zone captured from the client at creation time, e.g. "America/Los_Angeles". */
+  timezone: string;
   // Vercel AI SDK ModelMessage[], stored as plain JSON.
   messages: unknown[];
   codeVersions: CodeVersion[];
   pendingQuestion?: PendingQuestion;
   userAnswers: { question: string; answer: string }[];
+  /** How many agent steps have run so far this generation round — caps runaway loops across many /continue calls. */
+  stepCount: number;
+  /** Human-readable "what's happening right now", shown as generation progress. */
+  currentStage?: string;
+  /**
+   * The events from the most recent successful patchCode call this
+   * generation round, kept outside the (per-step) tool-call state so a
+   * `finalize` call in a LATER /continue step can still see it — each step
+   * runs generateText fresh, so nothing in-memory survives between steps
+   * except what's explicitly persisted here. Reset to null at the start of
+   * each new round (initializeSession/startRefinement). Using null rather
+   * than leaving it undefined so Mongo's $set doesn't silently drop the
+   * reset (it drops undefined-valued keys, not null).
+   */
+  latestPatchedEvents: NormalizedEvent[] | null;
   resultEvents?: NormalizedEvent[];
   resultIcs?: string;
   error?: string;

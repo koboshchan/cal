@@ -1,5 +1,6 @@
 import ivm from "isolated-vm";
 import { NormalizedEventArraySchema, type NormalizedEvent } from "../types";
+import { zonedTimeToUtc } from "../timezone";
 
 export interface SandboxInput {
   existingEvents: NormalizedEvent[];
@@ -7,6 +8,8 @@ export interface SandboxInput {
   imageNote?: string;
   userAnswers: { question: string; answer: string }[];
   now: string;
+  /** IANA zone, e.g. "America/Los_Angeles". The agent writes naive local wall-clock times; this is what they're local to. */
+  timezone: string;
 }
 
 export type SandboxRunResult =
@@ -66,7 +69,20 @@ export async function runGenerateSchedule(
       };
     }
 
-    return { ok: true, events: validated.data };
+    // The agent writes naive wall-clock times local to input.timezone; convert
+    // to real UTC instants here so downstream storage/.ics/display is correct
+    // regardless of what timezone the model's arithmetic assumed.
+    const converted = validated.data.map((event) =>
+      event.allDay
+        ? event
+        : {
+            ...event,
+            start: zonedTimeToUtc(event.start, input.timezone).toISOString(),
+            end: zonedTimeToUtc(event.end, input.timezone).toISOString(),
+          },
+    );
+
+    return { ok: true, events: converted };
   } catch (err) {
     return { ok: false, error: `Failed to compile/run code: ${String(err)}` };
   } finally {

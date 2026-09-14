@@ -1,54 +1,53 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { NormalizedEvent, PendingQuestion, SessionStatus } from "@/lib/types";
+import QuestionForm from "@/app/session-question-form";
+import type { SessionData } from "@/app/session-types";
 
-interface SessionData {
-  id: string;
-  status: SessionStatus;
-  title: string;
-  description: string;
-  userPrompt: string;
-  pendingQuestion?: PendingQuestion;
-  resultEvents?: NormalizedEvent[];
-  error?: string;
-}
-
-const POLL_MS = 2000;
+const POLL_MS = 700;
 
 export default function SessionView({ id }: { id: string }) {
   const [session, setSession] = useState<SessionData | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stoppedRef = useRef(false);
+
+  function handleUpdate(data: SessionData) {
+    if (stoppedRef.current) return;
+    setSession(data);
+    setLoadError(null);
+    if (data.status === "running") {
+      timerRef.current = setTimeout(advance, POLL_MS);
+    }
+    // "awaiting_input", "done", "error" just render and wait for the next
+    // user action (answering, refining, deleting) to feed a fresh update
+    // back through handleUpdate, which restarts polling if that goes
+    // straight back to "running".
+  }
+
+  async function advance() {
+    try {
+      const res = await fetch(`/api/sessions/${id}/continue`, { method: "POST" });
+      const data = await res.json();
+      if (stoppedRef.current) return;
+      if (!res.ok) {
+        setLoadError(data.error || "Failed to load session");
+        return;
+      }
+      handleUpdate(data);
+    } catch (err) {
+      if (!stoppedRef.current) setLoadError(err instanceof Error ? err.message : String(err));
+    }
+  }
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const res = await fetch(`/api/sessions/${id}`);
-        const data = await res.json();
-        if (cancelled) return;
-        if (!res.ok) {
-          setLoadError(data.error || "Failed to load session");
-          return;
-        }
-        setSession(data);
-        if (data.status !== "running" && pollRef.current) {
-          clearInterval(pollRef.current);
-          pollRef.current = null;
-        }
-      } catch (err) {
-        if (!cancelled) setLoadError(err instanceof Error ? err.message : String(err));
-      }
-    }
-
-    load();
-    pollRef.current = setInterval(load, POLL_MS);
+    stoppedRef.current = false;
+    advance();
     return () => {
-      cancelled = true;
-      if (pollRef.current) clearInterval(pollRef.current);
+      stoppedRef.current = true;
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   if (loadError) return <p className="p-8 text-red-600">{loadError}</p>;
@@ -65,15 +64,14 @@ export default function SessionView({ id }: { id: string }) {
       </p>
 
       {session.status === "running" && (
-        <p className="text-gray-600">Working on it…</p>
+        <div className="flex items-center gap-3">
+          <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-gray-300 border-t-black" />
+          <p className="text-gray-600">{session.currentStage ?? "Working on it…"}</p>
+        </div>
       )}
 
       {session.status === "awaiting_input" && session.pendingQuestion && (
-        <QuestionForm
-          sessionId={id}
-          question={session.pendingQuestion}
-          onAnswered={(updated) => setSession({ ...session, ...updated })}
-        />
+        <QuestionForm sessionId={id} question={session.pendingQuestion} onAnswered={handleUpdate} />
       )}
 
       {session.status === "error" && (
@@ -81,10 +79,7 @@ export default function SessionView({ id }: { id: string }) {
       )}
 
       {(session.status === "done" || session.status === "error") && (
-        <RefineForm
-          sessionId={id}
-          onRefined={(updated) => setSession({ ...session, ...updated })}
-        />
+        <RefineForm sessionId={id} onRefined={handleUpdate} />
       )}
 
       {session.status === "done" && session.resultEvents && (
@@ -100,11 +95,7 @@ export default function SessionView({ id }: { id: string }) {
                   </p>
                   {ev.location && <p className="text-sm text-gray-500">{ev.location}</p>}
                 </div>
-                <DeleteEventButton
-                  sessionId={id}
-                  eventIndex={i}
-                  onDeleted={(updated) => setSession({ ...session, ...updated })}
-                />
+                <DeleteEventButton sessionId={id} eventIndex={i} onDeleted={handleUpdate} />
               </li>
             ))}
           </ul>
@@ -127,7 +118,7 @@ function DeleteEventButton({
 }: {
   sessionId: string;
   eventIndex: number;
-  onDeleted: (updated: Partial<SessionData>) => void;
+  onDeleted: (updated: SessionData) => void;
 }) {
   const [deleting, setDeleting] = useState(false);
 
@@ -162,7 +153,7 @@ function RefineForm({
   onRefined,
 }: {
   sessionId: string;
-  onRefined: (updated: Partial<SessionData>) => void;
+  onRefined: (updated: SessionData) => void;
 }) {
   const [prompt, setPrompt] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -208,75 +199,6 @@ function RefineForm({
           {submitting ? "Working…" : "Refine"}
         </button>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-    </div>
-  );
-}
-
-function QuestionForm({
-  sessionId,
-  question,
-  onAnswered,
-}: {
-  sessionId: string;
-  question: PendingQuestion;
-  onAnswered: (updated: Partial<SessionData>) => void;
-}) {
-  const [text, setText] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function submit(answer: string) {
-    setSubmitting(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/sessions/${sessionId}/answer`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answer }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to submit answer");
-      onAnswered(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-3 rounded-lg border p-4">
-      <p className="font-medium">{question.question}</p>
-      {question.type === "choice" ? (
-        <div className="flex flex-wrap gap-2">
-          {question.options?.map((opt) => (
-            <button
-              key={opt}
-              disabled={submitting}
-              onClick={() => submit(opt)}
-              className="rounded-full border px-4 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50"
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <div className="flex gap-2">
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={question.placeholder}
-            className="flex-1 rounded-lg border px-3 py-2"
-          />
-          <button
-            disabled={submitting || !text.trim()}
-            onClick={() => submit(text.trim())}
-            className="rounded-lg bg-black px-4 py-2 text-white disabled:opacity-50"
-          >
-            Send
-          </button>
-        </div>
-      )}
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );

@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { runGenerateSchedule } from "../sandbox/run";
+import { formatInZone } from "../timezone";
 import type { NormalizedEvent, CodeVersion } from "../types";
 
 export interface AgentToolState {
@@ -25,9 +26,10 @@ export function buildTools(opts: {
   imageNote?: string;
   userAnswers: { question: string; answer: string }[];
   codeVersions: CodeVersion[];
+  timezone: string;
   state: AgentToolState;
 }) {
-  const { inputEvents, userPrompt, imageNote, userAnswers, codeVersions, state } = opts;
+  const { inputEvents, userPrompt, imageNote, userAnswers, codeVersions, timezone, state } = opts;
 
   const readCurrentCode = tool({
     description:
@@ -56,7 +58,8 @@ export function buildTools(opts: {
         userPrompt,
         imageNote,
         userAnswers,
-        now: new Date().toISOString(),
+        now: formatInZone(new Date(), timezone),
+        timezone,
       });
       if (result.ok) {
         state.latestValidEvents = result.events;

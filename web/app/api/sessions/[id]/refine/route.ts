@@ -2,7 +2,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { getOwnedSession, persistSession, serializeSessionDetail } from "@/lib/sessions";
-import { refineSession } from "@/lib/agent/run";
+import { startRefinement, stepSession } from "@/lib/agent/run";
 
 const Body = z.object({ prompt: z.string().min(1) });
 
@@ -20,7 +20,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     const { prompt } = Body.parse(await request.json());
-    await refineSession(session, prompt);
+    startRefinement(session, prompt);
+    await stepSession(session);
     await persistSession(session);
 
     return Response.json(serializeSessionDetail(session));

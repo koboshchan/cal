@@ -43,6 +43,7 @@ struct SessionDetail: Codable, Identifiable {
     // Optional: older sessions predate this field.
     let description: String?
     let userPrompt: String
+    let currentStage: String?
     let pendingQuestion: PendingQuestion?
     let resultEvents: [NormalizedEvent]?
     let error: String?

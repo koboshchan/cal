@@ -80,13 +80,23 @@ enum APIClient {
             boundary: boundary,
             textPrompt: textPrompt,
             icsData: icsData,
-            imageData: imageData
+            imageData: imageData,
+            timezone: TimeZone.current.identifier
         )
         return try await send(request)
     }
 
     static func session(id: String) async throws -> SessionDetail {
         let request = try await authorizedRequest(path: "/api/sessions/\(id)")
+        return try await send(request)
+    }
+
+    /// Advances a "running" session by exactly one agent step (a no-op
+    /// otherwise). Poll this on a timer to drive + observe multi-stage
+    /// generation instead of a passive GET, which would never make progress
+    /// on its own now that generation isn't done in one big server call.
+    static func continueSession(id: String) async throws -> SessionDetail {
+        let request = try await authorizedRequest(path: "/api/sessions/\(id)/continue", method: "POST")
         return try await send(request)
     }
 
@@ -161,7 +171,13 @@ enum APIClient {
         let _: OK = try await send(request)
     }
 
-    private static func multipartBody(boundary: String, textPrompt: String, icsData: Data?, imageData: Data?) -> Data {
+    private static func multipartBody(
+        boundary: String,
+        textPrompt: String,
+        icsData: Data?,
+        imageData: Data?,
+        timezone: String
+    ) -> Data {
         var body = Data()
         func appendField(name: String, value: String) {
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
@@ -182,6 +198,7 @@ enum APIClient {
         if !textPrompt.isEmpty { appendField(name: "textPrompt", value: textPrompt) }
         if let icsData { appendFile(name: "icsFile", filename: "calendar.ics", mimeType: "text/calendar", data: icsData) }
         if let imageData { appendFile(name: "imageFile", filename: "image.jpg", mimeType: "image/jpeg", data: imageData) }
+        appendField(name: "timezone", value: timezone)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         return body
     }

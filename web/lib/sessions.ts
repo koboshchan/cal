@@ -27,6 +27,7 @@ export function serializeSessionDetail(session: AgentSessionDoc & { _id: ObjectI
     title: session.title,
     description: session.description,
     userPrompt: session.userPrompt,
+    currentStage: session.currentStage,
     pendingQuestion: session.pendingQuestion,
     resultEvents: session.resultEvents,
     error: session.error,
@@ -85,8 +86,8 @@ export async function updateResultEvent(
 }
 
 /**
- * Persists the mutable fields `runInitialTurn`/`continueSessionWithAnswer`
- * update on a session. Uses $unset for `pendingQuestion` when it's been
+ * Persists the mutable fields `stepSession`/`answerPendingQuestion`/
+ * `startRefinement` update on a session. Uses $unset for `pendingQuestion` when it's been
  * cleared — the Mongo driver silently drops `undefined`-valued keys from
  * $set, which would otherwise leave a stale pendingQuestion in place.
  */
@@ -104,6 +105,9 @@ export async function persistSession(session: AgentSessionDoc & { _id: ObjectId 
         resultEvents: rest.resultEvents,
         resultIcs: rest.resultIcs,
         error: rest.error,
+        stepCount: rest.stepCount,
+        currentStage: rest.currentStage,
+        latestPatchedEvents: rest.latestPatchedEvents,
         updatedAt: rest.updatedAt,
         ...(pendingQuestion ? { pendingQuestion } : {}),
       },

@@ -4,7 +4,7 @@ import { getDb } from "@/lib/mongodb";
 import { parseIcs } from "@/lib/ics";
 import { describeImage } from "@/lib/agent/vision";
 import { summarizeRequest } from "@/lib/agent/summarize";
-import { runInitialTurn } from "@/lib/agent/run";
+import { initializeSession } from "@/lib/agent/run";
 import { serializeSessionDetail } from "@/lib/sessions";
 import type { AgentSessionDoc } from "@/lib/types";
 
@@ -35,6 +35,7 @@ export async function POST(request: Request) {
     const userPrompt = String(form.get("textPrompt") ?? "").trim();
     const icsFile = form.get("icsFile");
     const imageFile = form.get("imageFile");
+    const timezone = validTimezone(String(form.get("timezone") ?? ""));
 
     if (!userPrompt && !icsFile) {
       return Response.json(
@@ -58,33 +59,41 @@ export async function POST(request: Request) {
       );
     }
 
+    const summary = await summarizeRequest({ userPrompt, imageNote, eventCount: inputEvents.length });
+
     const now = new Date();
     const session: AgentSessionDoc = {
       userId: user.clerkUserId,
       status: "running",
-      title: "",
-      description: "",
+      title: summary.title,
+      description: summary.description,
       userPrompt,
       imageNote,
       inputEvents,
+      timezone,
       messages: [],
       codeVersions: [],
       userAnswers: [],
+      stepCount: 0,
+      latestPatchedEvents: null,
       createdAt: now,
       updatedAt: now,
     };
-
-    const [, summary] = await Promise.all([
-      runInitialTurn(session),
-      summarizeRequest({ userPrompt, imageNote, eventCount: inputEvents.length }),
-    ]);
-    session.title = summary.title;
-    session.description = summary.description;
+    initializeSession(session);
 
     const db = await getDb();
     const { insertedId } = await db.collection<AgentSessionDoc>("sessions").insertOne(session);
     return Response.json(serializeSessionDetail({ ...session, _id: insertedId }));
   } catch (err) {
     return handleApiError(err);
+  }
+}
+
+function validTimezone(name: string): string {
+  try {
+    new Intl.DateTimeFormat(undefined, { timeZone: name });
+    return name;
+  } catch {
+    return "UTC";
   }
 }
