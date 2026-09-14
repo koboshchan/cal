@@ -16,6 +16,14 @@ struct HomeView: View {
                 if let errorMessage {
                     Text(errorMessage).foregroundStyle(.red)
                 }
+                if sessions.isEmpty && errorMessage == nil {
+                    ContentUnavailableView(
+                        "No schedules yet",
+                        systemImage: "calendar.badge.plus",
+                        description: Text("Add a schedule by pressing the + button above")
+                    )
+                    .listRowSeparator(.hidden)
+                }
                 ForEach(sessions) { session in
                     NavigationLink(value: session.id) {
                         VStack(alignment: .leading) {
