@@ -6,6 +6,7 @@ struct HomeView: View {
     @State private var sessions: [SessionSummary] = []
     @State private var errorMessage: String?
     @State private var showingNewSession = false
+    @State private var showingSettings = false
 
     var body: some View {
         NavigationStack {
@@ -37,6 +38,11 @@ struct HomeView: View {
                         NavigationLink("Admin") { AdminView() }
                     }
                     Button {
+                        showingSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    Button {
                         showingNewSession = true
                     } label: {
                         Image(systemName: "plus")
@@ -45,6 +51,9 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showingNewSession, onDismiss: reload) {
                 NavigationStack { NewSessionView() }
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
             }
             .task { await reloadAsync() }
             .refreshable { await reloadAsync() }
