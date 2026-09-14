@@ -7,7 +7,7 @@ export interface SessionData {
   description: string;
   userPrompt: string;
   currentStage?: string;
-  pendingQuestion?: PendingQuestion;
+  pendingQuestions?: PendingQuestion[];
   resultEvents?: NormalizedEvent[];
   error?: string;
 }

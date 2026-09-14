@@ -19,13 +19,22 @@ struct SessionDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var session: SessionDetail?
     @State private var loadError: String?
-    @State private var answerText = ""
+    @State private var answersByQuestion: [String: String] = [:]
     @State private var answering = false
     @State private var refineText = ""
     @State private var refining = false
     @State private var icsFileURL: URL?
     @State private var downloadError: String?
     @State private var editingEvent: EditingEvent?
+
+    /// `initialSession`: when known already (right after creating it), show
+    /// the title/description immediately instead of a blank screen until
+    /// the first /continue round-trip comes back.
+    init(sessionId: String, initialSession: SessionDetail? = nil, onDone: (() -> Void)? = nil) {
+        self.sessionId = sessionId
+        self.onDone = onDone
+        _session = State(initialValue: initialSession)
+    }
 
     var body: some View {
         List {
@@ -52,18 +61,43 @@ struct SessionDetailView: View {
                     Section { Text(error).foregroundStyle(.red) }
                 }
 
-                if session.status == "awaiting_input", let question = session.pendingQuestion {
-                    Section(question.question) {
-                        if question.type == "choice", let options = question.options {
-                            ForEach(options, id: \.self) { option in
-                                Button(option) { submitAnswer(option) }
+                if session.status == "awaiting_input", let questions = session.pendingQuestions {
+                    ForEach(questions) { question in
+                        Section(question.question) {
+                            if question.type == "choice", let options = question.options {
+                                ForEach(options, id: \.self) { option in
+                                    let selected = answersByQuestion[question.toolCallId] == option
+                                    Button {
+                                        answersByQuestion[question.toolCallId] = option
+                                    } label: {
+                                        HStack {
+                                            Text(option)
+                                            if selected {
+                                                Spacer()
+                                                Image(systemName: "checkmark")
+                                            }
+                                        }
+                                    }
                                     .disabled(answering)
+                                }
+                            } else {
+                                TextField(
+                                    question.placeholder ?? "Your answer",
+                                    text: Binding(
+                                        get: { answersByQuestion[question.toolCallId] ?? "" },
+                                        set: { answersByQuestion[question.toolCallId] = $0 }
+                                    )
+                                )
                             }
-                        } else {
-                            TextField(question.placeholder ?? "Your answer", text: $answerText)
-                            Button("Send") { submitAnswer(answerText) }
-                                .disabled(answering || answerText.trimmingCharacters(in: .whitespaces).isEmpty)
                         }
+                    }
+                    Section {
+                        Button(answering ? "Sending…" : (questions.count > 1 ? "Send answers" : "Send")) {
+                            submitAnswers(for: questions)
+                        }
+                        .disabled(answering || questions.contains {
+                            (answersByQuestion[$0.toolCallId] ?? "").trimmingCharacters(in: .whitespaces).isEmpty
+                        })
                     }
                 }
 
@@ -117,7 +151,7 @@ struct SessionDetailView: View {
                 }
             }
         }
-        .navigationTitle("Session")
+        .navigationTitle(session?.title ?? "Session")
         .toolbar {
             if session?.status == "done" || session?.status == "error" {
                 ToolbarItem(placement: .confirmationAction) {
@@ -158,12 +192,18 @@ struct SessionDetailView: View {
         }
     }
 
-    private func submitAnswer(_ answer: String) {
+    private func submitAnswers(for questions: [PendingQuestion]) {
+        let answers = questions.map {
+            APIClient.QuestionAnswer(
+                toolCallId: $0.toolCallId,
+                answer: (answersByQuestion[$0.toolCallId] ?? "").trimmingCharacters(in: .whitespaces)
+            )
+        }
         answering = true
         Task {
             do {
-                session = try await APIClient.answer(sessionId: sessionId, answer: answer)
-                answerText = ""
+                session = try await APIClient.answer(sessionId: sessionId, answers: answers)
+                answersByQuestion = [:]
                 answering = false
                 if session?.status == "running" {
                     await pollUntilSettled()

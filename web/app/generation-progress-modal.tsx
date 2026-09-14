@@ -69,11 +69,11 @@ export default function GenerationProgressModal({
           </div>
         )}
 
-        {session?.status === "awaiting_input" && session.pendingQuestion && (
+        {session?.status === "awaiting_input" && session.pendingQuestions && (
           <div className="mt-4">
             <QuestionForm
               sessionId={sessionId}
-              question={session.pendingQuestion}
+              questions={session.pendingQuestions}
               onAnswered={handleUpdate}
             />
           </div>

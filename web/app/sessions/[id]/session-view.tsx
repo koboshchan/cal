@@ -70,8 +70,8 @@ export default function SessionView({ id }: { id: string }) {
         </div>
       )}
 
-      {session.status === "awaiting_input" && session.pendingQuestion && (
-        <QuestionForm sessionId={id} question={session.pendingQuestion} onAnswered={handleUpdate} />
+      {session.status === "awaiting_input" && session.pendingQuestions && (
+        <QuestionForm sessionId={id} questions={session.pendingQuestions} onAnswered={handleUpdate} />
       )}
 
       {session.status === "error" && (

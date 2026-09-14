@@ -22,11 +22,14 @@ struct NormalizedEvent: Codable, Identifiable {
     var endDate: Date? { ISO8601DateFormatter().date(from: end) }
 }
 
-struct PendingQuestion: Codable {
+struct PendingQuestion: Codable, Identifiable {
     let type: String // "choice" | "text"
     let question: String
     let options: [String]?
     let placeholder: String?
+    let toolCallId: String
+
+    var id: String { toolCallId }
 }
 
 struct SessionSummary: Codable, Identifiable {
@@ -44,7 +47,7 @@ struct SessionDetail: Codable, Identifiable {
     let description: String?
     let userPrompt: String
     let currentStage: String?
-    let pendingQuestion: PendingQuestion?
+    let pendingQuestions: [PendingQuestion]?
     let resultEvents: [NormalizedEvent]?
     let error: String?
 }

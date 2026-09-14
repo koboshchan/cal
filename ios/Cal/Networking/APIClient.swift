@@ -100,10 +100,17 @@ enum APIClient {
         return try await send(request)
     }
 
-    static func answer(sessionId: String, answer: String) async throws -> SessionDetail {
+    struct QuestionAnswer: Encodable {
+        let toolCallId: String
+        let answer: String
+    }
+
+    /// The agent may ask several questions in one turn (any mix of choice/
+    /// text); all of them must be answered together in one call.
+    static func answer(sessionId: String, answers: [QuestionAnswer]) async throws -> SessionDetail {
         var request = try await authorizedRequest(path: "/api/sessions/\(sessionId)/answer", method: "POST")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try encoder.encode(["answer": answer])
+        request.httpBody = try encoder.encode(["answers": answers])
         return try await send(request)
     }
 

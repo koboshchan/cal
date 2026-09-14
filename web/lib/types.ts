@@ -70,7 +70,8 @@ export interface AgentSessionDoc {
   // Vercel AI SDK ModelMessage[], stored as plain JSON.
   messages: unknown[];
   codeVersions: CodeVersion[];
-  pendingQuestion?: PendingQuestion;
+  /** All questions the agent asked in its most recent step — it can ask any mix/count of choice and text questions in one turn. */
+  pendingQuestions?: PendingQuestion[];
   userAnswers: { question: string; answer: string }[];
   /** How many agent steps have run so far this generation round — caps runaway loops across many /continue calls. */
   stepCount: number;

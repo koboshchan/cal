@@ -35,28 +35,36 @@ export function initializeSession(session: AgentSessionDoc): void {
 
 /**
  * Mutates `session` in place, resuming a paused (awaiting_input) session
- * with the user's answer. Does not itself take an agent step — call
- * `stepSession` afterward (the route handlers do this immediately so the
- * response reflects real progress, and the client's poll loop carries on
- * from there if more steps are needed).
+ * with the user's answers — one per pending question, matched by
+ * toolCallId (the agent may have asked several questions in one turn, any
+ * mix of choice/text). All of them must be answered in a single tool
+ * message: they're all tool-results for calls the model made in the same
+ * preceding turn, and a model turn can't be "half resolved". Does not
+ * itself take an agent step — call `stepSession` afterward (the route
+ * handlers do this immediately so the response reflects real progress, and
+ * the client's poll loop carries on from there if more steps are needed).
  */
-export function answerPendingQuestion(session: AgentSessionDoc, answer: string): void {
-  const pending = session.pendingQuestion;
-  if (!pending) throw new Error("Session has no pending question");
+export function answerPendingQuestions(
+  session: AgentSessionDoc,
+  answers: { toolCallId: string; answer: string }[],
+): void {
+  const pending = session.pendingQuestions;
+  if (!pending || pending.length === 0) throw new Error("Session has no pending questions");
 
-  session.userAnswers.push({ question: pending.question, answer });
-  session.messages.push({
-    role: "tool",
-    content: [
-      {
-        type: "tool-result",
-        toolCallId: pending.toolCallId,
-        toolName: pending.toolName,
-        output: { type: "json", value: answer },
-      },
-    ],
-  } satisfies ModelMessage);
-  session.pendingQuestion = undefined;
+  const content = pending.map((question) => {
+    const found = answers.find((a) => a.toolCallId === question.toolCallId);
+    if (!found) throw new Error(`Missing an answer for: ${question.question}`);
+    session.userAnswers.push({ question: question.question, answer: found.answer });
+    return {
+      type: "tool-result" as const,
+      toolCallId: question.toolCallId,
+      toolName: question.toolName,
+      output: { type: "json" as const, value: found.answer },
+    };
+  });
+
+  session.messages.push({ role: "tool", content } satisfies ModelMessage);
+  session.pendingQuestions = undefined;
   session.status = "running";
   session.currentStage = "Continuing…";
 }
@@ -121,7 +129,7 @@ export async function stepSession(session: AgentSessionDoc): Promise<void> {
     session.stepCount += 1;
 
     const finalizeCall = result.toolCalls.find((c) => c.toolName === "finalize");
-    const askCall = result.toolCalls.find(
+    const askCalls = result.toolCalls.filter(
       (c) => c.toolName === "askChoice" || c.toolName === "askTextInput",
     );
     const patchCall = result.toolCalls.find((c) => c.toolName === "patchCode");
@@ -140,22 +148,25 @@ export async function stepSession(session: AgentSessionDoc): Promise<void> {
       session.status = "error";
       session.error =
         "The agent tried to finish without ever producing a valid schedule. Try rephrasing your request.";
-    } else if (askCall) {
-      const input = askCall.input as {
-        question: string;
-        options?: string[];
-        placeholder?: string;
-      };
-      session.pendingQuestion = {
-        type: askCall.toolName === "askChoice" ? "choice" : "text",
-        question: input.question,
-        options: input.options,
-        placeholder: input.placeholder,
-        toolCallId: askCall.toolCallId,
-        toolName: askCall.toolName as "askChoice" | "askTextInput",
-      };
+    } else if (askCalls.length > 0) {
+      session.pendingQuestions = askCalls.map((askCall) => {
+        const input = askCall.input as {
+          question: string;
+          options?: string[];
+          placeholder?: string;
+        };
+        return {
+          type: askCall.toolName === "askChoice" ? "choice" : "text",
+          question: input.question,
+          options: input.options,
+          placeholder: input.placeholder,
+          toolCallId: askCall.toolCallId,
+          toolName: askCall.toolName as "askChoice" | "askTextInput",
+        };
+      });
       session.status = "awaiting_input";
-      session.currentStage = "Waiting for your answer…";
+      session.currentStage =
+        askCalls.length > 1 ? "Waiting for your answers…" : "Waiting for your answer…";
     } else if (patchCall) {
       const attempt = session.codeVersions.length;
       session.currentStage = state.latestValidEvents

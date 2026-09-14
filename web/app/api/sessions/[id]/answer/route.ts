@@ -2,9 +2,11 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { getOwnedSession, persistSession, serializeSessionDetail } from "@/lib/sessions";
-import { answerPendingQuestion, stepSession } from "@/lib/agent/run";
+import { answerPendingQuestions, stepSession } from "@/lib/agent/run";
 
-const Body = z.object({ answer: z.string().min(1) });
+const Body = z.object({
+  answers: z.array(z.object({ toolCallId: z.string().min(1), answer: z.string().min(1) })).min(1),
+});
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -19,8 +21,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       );
     }
 
-    const { answer } = Body.parse(await request.json());
-    answerPendingQuestion(session, answer);
+    const { answers } = Body.parse(await request.json());
+    answerPendingQuestions(session, answers);
     await stepSession(session);
     await persistSession(session);
 

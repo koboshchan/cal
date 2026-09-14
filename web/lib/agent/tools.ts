@@ -71,7 +71,9 @@ export function buildTools(opts: {
 
   const askChoice = tool({
     description:
-      "Ask the user a multiple-choice clarifying question. Use only when guessing would likely produce a materially wrong result.",
+      "Ask the user ONE multiple-choice clarifying question. Use only when guessing would likely produce a materially wrong result. " +
+      "If you have several separate questions, call this (and/or askTextInput) multiple times in the SAME turn — one call per question — " +
+      "rather than cramming multiple questions into one, or asking them one at a time across separate turns.",
     inputSchema: z.object({
       question: z.string(),
       options: z.array(z.string()).min(2).max(6),
@@ -80,7 +82,9 @@ export function buildTools(opts: {
 
   const askTextInput = tool({
     description:
-      "Ask the user a free-text clarifying question (e.g. for a specific date). Use only when guessing would likely produce a materially wrong result.",
+      "Ask the user ONE free-text clarifying question (e.g. for a specific date). Use only when guessing would likely produce a materially wrong result. " +
+      "If you have several separate questions, call this (and/or askChoice) multiple times in the SAME turn — one call per question — " +
+      "rather than cramming multiple questions into one, or asking them one at a time across separate turns.",
     inputSchema: z.object({
       question: z.string(),
       placeholder: z.string().optional(),

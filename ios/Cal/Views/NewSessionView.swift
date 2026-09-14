@@ -13,7 +13,8 @@ struct NewSessionView: View {
     @State private var icsFilename: String?
     @State private var submitting = false
     @State private var errorMessage: String?
-    @State private var createdSessionId: String?
+    @State private var createdSession: SessionDetail?
+    @State private var showingCreatedSession = false
 
     var body: some View {
         Form {
@@ -61,11 +62,16 @@ struct NewSessionView: View {
             guard case .success(let url) = result else { return }
             loadIcs(from: url)
         }
-        .navigationDestination(item: $createdSessionId) { sessionId in
+        .navigationDestination(isPresented: $showingCreatedSession) {
             // onDone: dismiss THIS view's own sheet, not just pop back to
             // the form — SessionDetailView is pushed inside this sheet's
             // NavigationStack, so its own dismiss() would only do the latter.
-            SessionDetailView(sessionId: sessionId, onDone: { dismiss() })
+            // initialSession: we already have the full session (title,
+            // description, ...) from creating it — show it immediately
+            // instead of a blank screen until the first /continue call.
+            if let createdSession {
+                SessionDetailView(sessionId: createdSession.id, initialSession: createdSession, onDone: { dismiss() })
+            }
         }
     }
 
@@ -90,7 +96,8 @@ struct NewSessionView: View {
                     icsData: icsData,
                     imageData: imageData
                 )
-                createdSessionId = session.id
+                createdSession = session
+                showingCreatedSession = true
             } catch {
                 errorMessage = error.localizedDescription
             }
