@@ -69,6 +69,17 @@ export default function GenerationProgressModal({
           </div>
         )}
 
+        {session?.userAnswers && session.userAnswers.length > 0 && (
+          <div className="mt-4 flex flex-col gap-2 rounded-lg bg-gray-50 p-3">
+            {session.userAnswers.map((qa, i) => (
+              <div key={i}>
+                <p className="text-xs text-gray-500">{qa.question}</p>
+                <p className="text-sm font-medium">{qa.answer}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
         {session?.status === "awaiting_input" && session.pendingQuestions && (
           <div className="mt-4">
             <QuestionForm

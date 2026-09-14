@@ -19,7 +19,6 @@ struct SessionDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var session: SessionDetail?
     @State private var loadError: String?
-    @State private var answersByQuestion: [String: String] = [:]
     @State private var answering = false
     @State private var refineText = ""
     @State private var refining = false
@@ -61,43 +60,22 @@ struct SessionDetailView: View {
                     Section { Text(error).foregroundStyle(.red) }
                 }
 
-                if session.status == "awaiting_input", let questions = session.pendingQuestions {
-                    ForEach(questions) { question in
-                        Section(question.question) {
-                            if question.type == "choice", let options = question.options {
-                                ForEach(options, id: \.self) { option in
-                                    let selected = answersByQuestion[question.toolCallId] == option
-                                    Button {
-                                        answersByQuestion[question.toolCallId] = option
-                                    } label: {
-                                        HStack {
-                                            Text(option)
-                                            if selected {
-                                                Spacer()
-                                                Image(systemName: "checkmark")
-                                            }
-                                        }
-                                    }
-                                    .disabled(answering)
-                                }
-                            } else {
-                                TextField(
-                                    question.placeholder ?? "Your answer",
-                                    text: Binding(
-                                        get: { answersByQuestion[question.toolCallId] ?? "" },
-                                        set: { answersByQuestion[question.toolCallId] = $0 }
-                                    )
-                                )
+                if let userAnswers = session.userAnswers, !userAnswers.isEmpty {
+                    Section {
+                        ForEach(userAnswers) { qa in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(qa.question).font(.caption).foregroundStyle(.secondary)
+                                Text(qa.answer).font(.body.weight(.medium))
                             }
                         }
                     }
+                }
+
+                if session.status == "awaiting_input", let questions = session.pendingQuestions {
                     Section {
-                        Button(answering ? "Sending…" : (questions.count > 1 ? "Send answers" : "Send")) {
-                            submitAnswers(for: questions)
+                        QuestionWizardView(questions: questions, submitting: answering) { answers in
+                            submitAnswers(answers)
                         }
-                        .disabled(answering || questions.contains {
-                            (answersByQuestion[$0.toolCallId] ?? "").trimmingCharacters(in: .whitespaces).isEmpty
-                        })
                     }
                 }
 
@@ -111,7 +89,7 @@ struct SessionDetailView: View {
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
-                                if let rrule = event.rrule {
+                                if let rrule = event.formattedRRule {
                                     Text("Repeats: \(rrule)").font(.caption2).foregroundStyle(.secondary)
                                 }
                                 if let location = event.location, !location.isEmpty {
@@ -192,18 +170,11 @@ struct SessionDetailView: View {
         }
     }
 
-    private func submitAnswers(for questions: [PendingQuestion]) {
-        let answers = questions.map {
-            APIClient.QuestionAnswer(
-                toolCallId: $0.toolCallId,
-                answer: (answersByQuestion[$0.toolCallId] ?? "").trimmingCharacters(in: .whitespaces)
-            )
-        }
+    private func submitAnswers(_ answers: [APIClient.QuestionAnswer]) {
         answering = true
         Task {
             do {
                 session = try await APIClient.answer(sessionId: sessionId, answers: answers)
-                answersByQuestion = [:]
                 answering = false
                 if session?.status == "running" {
                     await pollUntilSettled()

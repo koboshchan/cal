@@ -20,6 +20,13 @@ struct NormalizedEvent: Codable, Identifiable {
 
     var startDate: Date? { ISO8601DateFormatter().date(from: start) }
     var endDate: Date? { ISO8601DateFormatter().date(from: end) }
+    var formattedRRule: String? { rrule.map { RRuleFormat.describe($0) } }
+}
+
+struct UserAnswer: Codable, Identifiable {
+    let question: String
+    let answer: String
+    var id: String { question }
 }
 
 struct PendingQuestion: Codable, Identifiable {
@@ -48,6 +55,7 @@ struct SessionDetail: Codable, Identifiable {
     let userPrompt: String
     let currentStage: String?
     let pendingQuestions: [PendingQuestion]?
+    let userAnswers: [UserAnswer]?
     let resultEvents: [NormalizedEvent]?
     let error: String?
 }

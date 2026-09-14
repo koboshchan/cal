@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import QuestionForm from "@/app/session-question-form";
+import { formatRRule } from "@/app/format-rrule";
 import type { SessionData } from "@/app/session-types";
 
 const POLL_MS = 700;
@@ -70,6 +71,17 @@ export default function SessionView({ id }: { id: string }) {
         </div>
       )}
 
+      {session.userAnswers && session.userAnswers.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-lg border p-4">
+          {session.userAnswers.map((qa, i) => (
+            <div key={i}>
+              <p className="text-sm text-gray-500">{qa.question}</p>
+              <p className="font-medium">{qa.answer}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {session.status === "awaiting_input" && session.pendingQuestions && (
         <QuestionForm sessionId={id} questions={session.pendingQuestions} onAnswered={handleUpdate} />
       )}
@@ -91,7 +103,7 @@ export default function SessionView({ id }: { id: string }) {
                   <p className="font-medium">{ev.title}</p>
                   <p className="text-sm text-gray-500">
                     {new Date(ev.start).toLocaleString()} — {new Date(ev.end).toLocaleString()}
-                    {ev.rrule ? ` · repeats: ${ev.rrule}` : ""}
+                    {ev.rrule ? ` · repeats: ${formatRRule(ev.rrule)}` : ""}
                   </p>
                   {ev.location && <p className="text-sm text-gray-500">{ev.location}</p>}
                 </div>

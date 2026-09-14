@@ -29,6 +29,7 @@ export function serializeSessionDetail(session: AgentSessionDoc & { _id: ObjectI
     userPrompt: session.userPrompt,
     currentStage: session.currentStage,
     pendingQuestions: session.pendingQuestions,
+    userAnswers: session.userAnswers,
     resultEvents: session.resultEvents,
     error: session.error,
     createdAt: session.createdAt,
