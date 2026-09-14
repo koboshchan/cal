@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
-import { getOwnedSession, persistSession } from "@/lib/sessions";
+import { getOwnedSession, persistSession, serializeSessionDetail } from "@/lib/sessions";
 import { continueSessionWithAnswer } from "@/lib/agent/run";
 
 const Body = z.object({ answer: z.string().min(1) });
@@ -23,12 +23,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     await continueSessionWithAnswer(session, answer);
     await persistSession(session);
 
-    return Response.json({
-      status: session.status,
-      pendingQuestion: session.pendingQuestion,
-      resultEvents: session.resultEvents,
-      error: session.error,
-    });
+    return Response.json(serializeSessionDetail(session));
   } catch (err) {
     return handleApiError(err);
   }

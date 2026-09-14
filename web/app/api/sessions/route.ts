@@ -4,6 +4,7 @@ import { getDb } from "@/lib/mongodb";
 import { parseIcs } from "@/lib/ics";
 import { describeImage } from "@/lib/agent/vision";
 import { runInitialTurn } from "@/lib/agent/run";
+import { serializeSessionDetail } from "@/lib/sessions";
 import type { AgentSessionDoc } from "@/lib/types";
 
 export async function GET() {
@@ -75,18 +76,8 @@ export async function POST(request: Request) {
 
     const db = await getDb();
     const { insertedId } = await db.collection<AgentSessionDoc>("sessions").insertOne(session);
-    return Response.json({ id: insertedId.toString(), ...serialize(session) });
+    return Response.json(serializeSessionDetail({ ...session, _id: insertedId }));
   } catch (err) {
     return handleApiError(err);
   }
-}
-
-function serialize(session: AgentSessionDoc) {
-  return {
-    status: session.status,
-    title: session.title,
-    pendingQuestion: session.pendingQuestion,
-    resultEvents: session.resultEvents,
-    error: session.error,
-  };
 }

@@ -17,6 +17,21 @@ export async function getOwnedSession(
   return session as AgentSessionDoc & { _id: ObjectId };
 }
 
+/** The one JSON shape every session-returning route (create/get/answer) sends. */
+export function serializeSessionDetail(session: AgentSessionDoc & { _id: ObjectId }) {
+  return {
+    id: session._id.toString(),
+    status: session.status,
+    title: session.title,
+    userPrompt: session.userPrompt,
+    pendingQuestion: session.pendingQuestion,
+    resultEvents: session.resultEvents,
+    error: session.error,
+    createdAt: session.createdAt,
+    updatedAt: session.updatedAt,
+  };
+}
+
 /**
  * Persists the mutable fields `runInitialTurn`/`continueSessionWithAnswer`
  * update on a session. Uses $unset for `pendingQuestion` when it's been

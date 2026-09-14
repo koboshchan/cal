@@ -18,7 +18,10 @@ export async function getChatModel() {
     );
   }
   const provider = createOpenAI({ baseURL: settings.baseURL, apiKey: settings.apiKey });
-  return provider(settings.model);
+  // `provider(id)` defaults to OpenAI's newer Responses API (`/responses`).
+  // Force Chat Completions (`/chat/completions`) since that's the only
+  // surface most OpenAI-compatible proxies (this app's whole point) implement.
+  return provider.chat(settings.model);
 }
 
 export async function getVisionModel() {
@@ -29,5 +32,5 @@ export async function getVisionModel() {
     );
   }
   const provider = createOpenAI({ baseURL: settings.baseURL, apiKey: settings.apiKey });
-  return provider(settings.visionModel || settings.model);
+  return provider.chat(settings.visionModel || settings.model);
 }
