@@ -24,6 +24,8 @@ export interface UserDoc {
   email: string;
   role: Role;
   createdAt: Date;
+  /** Opaque secret identifying this user's calendar-subscription feed (calendar apps can't send our bearer token). */
+  calendarFeedToken?: string;
 }
 
 export interface SettingsDoc {

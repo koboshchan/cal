@@ -1,8 +1,15 @@
 import SwiftUI
 
+private struct EditingEvent: Identifiable {
+    let index: Int
+    let event: NormalizedEvent
+    var id: Int { index }
+}
+
 struct SessionDetailView: View {
     let sessionId: String
 
+    @Environment(\.dismiss) private var dismiss
     @State private var session: SessionDetail?
     @State private var loadError: String?
     @State private var answerText = ""
@@ -11,6 +18,7 @@ struct SessionDetailView: View {
     @State private var refining = false
     @State private var icsFileURL: URL?
     @State private var downloadError: String?
+    @State private var editingEvent: EditingEvent?
 
     var body: some View {
         List {
@@ -53,8 +61,8 @@ struct SessionDetailView: View {
                 }
 
                 if session.status == "done", let events = session.resultEvents {
-                    Section("Calendar (swipe to remove)") {
-                        ForEach(Array(events.enumerated()), id: \.offset) { _, event in
+                    Section("Calendar (swipe for actions)") {
+                        ForEach(Array(events.enumerated()), id: \.offset) { index, event in
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(event.title).font(.body)
                                 if let start = event.startDate, let end = event.endDate {
@@ -69,8 +77,16 @@ struct SessionDetailView: View {
                                     Text(location).font(.caption).foregroundStyle(.secondary)
                                 }
                             }
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) { deleteEvent(index) } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                                Button { editingEvent = EditingEvent(index: index, event: event) } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.orange)
+                            }
                         }
-                        .onDelete(perform: deleteEvents)
                     }
 
                     Section {
@@ -95,6 +111,18 @@ struct SessionDetailView: View {
             }
         }
         .navigationTitle("Session")
+        .toolbar {
+            if session?.status == "done" || session?.status == "error" {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .sheet(item: $editingEvent) { editing in
+            EditEventView(original: editing.event) { updated in
+                updateEvent(at: editing.index, with: updated)
+            }
+        }
         .task { await pollUntilSettled() }
     }
 
@@ -150,14 +178,26 @@ struct SessionDetailView: View {
         }
     }
 
-    private func deleteEvents(at offsets: IndexSet) {
-        guard let index = offsets.first else { return }
+    private func deleteEvent(_ index: Int) {
         Task {
             do {
                 session = try await APIClient.deleteEvent(sessionId: sessionId, eventIndex: index)
                 icsFileURL = nil
             } catch {
                 loadError = error.localizedDescription
+            }
+        }
+    }
+
+    private func updateEvent(at index: Int, with event: NormalizedEvent) {
+        Task {
+            do {
+                session = try await APIClient.updateEvent(sessionId: sessionId, eventIndex: index, event: event)
+                icsFileURL = nil
+                editingEvent = nil
+            } catch {
+                loadError = error.localizedDescription
+                editingEvent = nil
             }
         }
     }

@@ -99,6 +99,16 @@ enum APIClient {
         return try await send(request)
     }
 
+    static func updateEvent(sessionId: String, eventIndex: Int, event: NormalizedEvent) async throws -> SessionDetail {
+        var request = try await authorizedRequest(
+            path: "/api/sessions/\(sessionId)/events/\(eventIndex)",
+            method: "PATCH"
+        )
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try encoder.encode(event)
+        return try await send(request)
+    }
+
     static func icsURL(sessionId: String) -> URL {
         AppConfig.baseURL.appendingPathComponent("/api/sessions/\(sessionId)/ics")
     }
@@ -115,6 +125,11 @@ enum APIClient {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(sessionId).ics")
         try data.write(to: url, options: .atomic)
         return url
+    }
+
+    static func getCalendarFeed() async throws -> CalendarFeed {
+        let request = try await authorizedRequest(path: "/api/me/calendar-feed")
+        return try await send(request)
     }
 
     static func getSettings() async throws -> ProviderSettings {

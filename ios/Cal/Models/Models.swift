@@ -59,3 +59,7 @@ struct ProviderSettings: Codable {
 struct APIErrorBody: Codable {
     let error: String
 }
+
+struct CalendarFeed: Codable {
+    let path: String
+}

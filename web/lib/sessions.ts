@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "./mongodb";
 import { generateIcs } from "./ics";
-import type { AgentSessionDoc } from "./types";
+import type { AgentSessionDoc, NormalizedEvent } from "./types";
 
 export class NotFoundError extends Error {}
 export class InvalidRequestError extends Error {}
@@ -48,6 +48,31 @@ export async function removeResultEvent(
   }
 
   const resultEvents = session.resultEvents.filter((_, i) => i !== eventIndex);
+  const resultIcs = generateIcs(resultEvents);
+  session.resultEvents = resultEvents;
+  session.resultIcs = resultIcs;
+  session.updatedAt = new Date();
+
+  const db = await getDb();
+  await db
+    .collection<AgentSessionDoc>("sessions")
+    .updateOne({ _id: session._id }, { $set: { resultEvents, resultIcs, updatedAt: session.updatedAt } });
+}
+
+/** Replaces one event in a finished session's result, in place, and re-serializes the .ics. */
+export async function updateResultEvent(
+  session: AgentSessionDoc & { _id: ObjectId },
+  eventIndex: number,
+  event: NormalizedEvent,
+): Promise<void> {
+  if (session.status !== "done" || !session.resultEvents) {
+    throw new InvalidRequestError("Session has no finished result to edit");
+  }
+  if (!Number.isInteger(eventIndex) || eventIndex < 0 || eventIndex >= session.resultEvents.length) {
+    throw new InvalidRequestError("Event index out of range");
+  }
+
+  const resultEvents = session.resultEvents.map((e, i) => (i === eventIndex ? event : e));
   const resultIcs = generateIcs(resultEvents);
   session.resultEvents = resultEvents;
   session.resultIcs = resultIcs;
