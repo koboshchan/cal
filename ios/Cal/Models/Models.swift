@@ -30,10 +30,8 @@ struct UserAnswer: Codable, Identifiable {
 }
 
 struct PendingQuestion: Codable, Identifiable {
-    let type: String // "choice" | "text"
     let question: String
-    let options: [String]?
-    let placeholder: String?
+    let options: [String]
     let toolCallId: String
 
     var id: String { toolCallId }

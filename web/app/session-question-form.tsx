@@ -16,7 +16,6 @@ export default function QuestionForm({
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [customText, setCustomText] = useState("");
-  const [usingOther, setUsingOther] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,10 +23,11 @@ export default function QuestionForm({
   const isLast = stepIndex === questions.length - 1;
 
   function chooseAndAdvance(value: string) {
-    const updated = { ...answers, [question.toolCallId]: value };
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    const updated = { ...answers, [question.toolCallId]: trimmed };
     setAnswers(updated);
     setCustomText("");
-    setUsingOther(false);
     if (isLast) {
       submitAll(updated);
     } else {
@@ -55,56 +55,53 @@ export default function QuestionForm({
     }
   }
 
-  const showingTextEntry = question.type === "text" || usingOther;
-
   return (
-    <div className="flex flex-col gap-3 rounded-lg border p-4">
+    <div className="flex flex-col gap-4 rounded-xl border p-5">
       {questions.length > 1 && (
-        <p className="text-xs text-gray-400">
-          Question {stepIndex + 1} of {questions.length}
+        <p className="text-xs font-medium tracking-wide text-gray-400">
+          QUESTION {stepIndex + 1} OF {questions.length}
         </p>
       )}
-      <p className="font-medium">{question.question}</p>
+      <p className="text-base font-semibold text-gray-900">{question.question}</p>
 
-      {!showingTextEntry ? (
-        <div className="flex flex-wrap gap-2">
-          {question.options?.map((opt) => (
-            <button
-              key={opt}
-              disabled={submitting}
-              onClick={() => chooseAndAdvance(opt)}
-              className="rounded-full border px-4 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50"
-            >
-              {opt}
-            </button>
-          ))}
+      <div className="flex flex-col gap-2">
+        {question.options.map((opt) => (
           <button
+            key={opt}
             disabled={submitting}
-            onClick={() => setUsingOther(true)}
-            className="rounded-full border border-dashed px-4 py-1.5 text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+            onClick={() => chooseAndAdvance(opt)}
+            className="w-full rounded-lg border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-800 transition hover:border-gray-900 hover:bg-gray-50 disabled:opacity-50"
           >
-            Other
+            {opt}
           </button>
-        </div>
-      ) : (
-        <div className="flex gap-2">
-          <input
-            value={customText}
-            onChange={(e) => setCustomText(e.target.value)}
-            placeholder={question.type === "text" ? question.placeholder : "Type your own answer"}
-            disabled={submitting}
-            autoFocus
-            className="flex-1 rounded-lg border px-3 py-2"
-          />
-          <button
-            onClick={() => customText.trim() && chooseAndAdvance(customText.trim())}
-            disabled={submitting || !customText.trim()}
-            className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {submitting ? "Sending…" : isLast ? "Submit" : "Next"}
-          </button>
-        </div>
-      )}
+        ))}
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-gray-200" />
+        <span className="text-xs text-gray-400">or write your own</span>
+        <div className="h-px flex-1 bg-gray-200" />
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          value={customText}
+          onChange={(e) => setCustomText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") chooseAndAdvance(customText);
+          }}
+          placeholder="Type your own answer"
+          disabled={submitting}
+          className="flex-1 rounded-lg border px-3 py-2 text-sm"
+        />
+        <button
+          onClick={() => chooseAndAdvance(customText)}
+          disabled={submitting || !customText.trim()}
+          className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+        >
+          {submitting ? "Sending…" : isLast ? "Submit" : "Next"}
+        </button>
+      </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );

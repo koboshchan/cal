@@ -41,13 +41,10 @@ export interface SettingsDoc {
 export type SessionStatus = "running" | "awaiting_input" | "done" | "error";
 
 export interface PendingQuestion {
-  type: "choice" | "text";
   question: string;
-  options?: string[];
-  placeholder?: string;
+  options: string[];
   // Internal bookkeeping to resume generateText with the matching tool-result.
   toolCallId: string;
-  toolName: "askChoice" | "askTextInput";
 }
 
 export interface CodeVersion {
@@ -70,7 +67,7 @@ export interface AgentSessionDoc {
   // Vercel AI SDK ModelMessage[], stored as plain JSON.
   messages: unknown[];
   codeVersions: CodeVersion[];
-  /** All questions the agent asked in its most recent step — it can ask any mix/count of choice and text questions in one turn. */
+  /** All questions the agent asked in its most recent step — it can ask any number of them in one turn. */
   pendingQuestions?: PendingQuestion[];
   userAnswers: { question: string; answer: string }[];
   /** How many agent steps have run so far this generation round — caps runaway loops across many /continue calls. */

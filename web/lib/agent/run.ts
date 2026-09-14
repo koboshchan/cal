@@ -36,10 +36,10 @@ export function initializeSession(session: AgentSessionDoc): void {
 /**
  * Mutates `session` in place, resuming a paused (awaiting_input) session
  * with the user's answers — one per pending question, matched by
- * toolCallId (the agent may have asked several questions in one turn, any
- * mix of choice/text). All of them must be answered in a single tool
- * message: they're all tool-results for calls the model made in the same
- * preceding turn, and a model turn can't be "half resolved". Does not
+ * toolCallId (the agent may have asked several questions in one turn). All
+ * of them must be answered in a single tool message: they're all
+ * tool-results for calls the model made in the same preceding turn, and a
+ * model turn can't be "half resolved". Does not
  * itself take an agent step — call `stepSession` afterward (the route
  * handlers do this immediately so the response reflects real progress, and
  * the client's poll loop carries on from there if more steps are needed).
@@ -58,7 +58,7 @@ export function answerPendingQuestions(
     return {
       type: "tool-result" as const,
       toolCallId: question.toolCallId,
-      toolName: question.toolName,
+      toolName: "askChoice" as const,
       output: { type: "json" as const, value: found.answer },
     };
   });
@@ -129,9 +129,7 @@ export async function stepSession(session: AgentSessionDoc): Promise<void> {
     session.stepCount += 1;
 
     const finalizeCall = result.toolCalls.find((c) => c.toolName === "finalize");
-    const askCalls = result.toolCalls.filter(
-      (c) => c.toolName === "askChoice" || c.toolName === "askTextInput",
-    );
+    const askCalls = result.toolCalls.filter((c) => c.toolName === "askChoice");
     const patchCall = result.toolCalls.find((c) => c.toolName === "patchCode");
     const readCall = result.toolCalls.find((c) => c.toolName === "readCurrentCode");
 
@@ -150,18 +148,11 @@ export async function stepSession(session: AgentSessionDoc): Promise<void> {
         "The agent tried to finish without ever producing a valid schedule. Try rephrasing your request.";
     } else if (askCalls.length > 0) {
       session.pendingQuestions = askCalls.map((askCall) => {
-        const input = askCall.input as {
-          question: string;
-          options?: string[];
-          placeholder?: string;
-        };
+        const input = askCall.input as { question: string; options: string[] };
         return {
-          type: askCall.toolName === "askChoice" ? "choice" : "text",
           question: input.question,
           options: input.options,
-          placeholder: input.placeholder,
           toolCallId: askCall.toolCallId,
-          toolName: askCall.toolName as "askChoice" | "askTextInput",
         };
       });
       session.status = "awaiting_input";

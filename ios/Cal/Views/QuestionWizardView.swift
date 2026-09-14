@@ -4,6 +4,11 @@ import SwiftUI
 /// single turn) and submits all of them together once the last one is
 /// answered — a model turn with multiple tool calls can't be half-resolved,
 /// so partial submission isn't an option.
+///
+/// There's no separate free-text question type: every question is
+/// multiple-choice, and a "write your own" text field is always shown
+/// underneath as its own section rather than replacing the choices, so the
+/// choice buttons can have a clean, uncluttered layout.
 struct QuestionWizardView: View {
     let questions: [PendingQuestion]
     let submitting: Bool
@@ -12,38 +17,59 @@ struct QuestionWizardView: View {
     @State private var stepIndex = 0
     @State private var answers: [String: String] = [:]
     @State private var customText = ""
-    @State private var usingOther = false
 
     private var question: PendingQuestion { questions[stepIndex] }
     private var isLast: Bool { stepIndex == questions.count - 1 }
-    private var showingTextEntry: Bool { question.type != "choice" || usingOther }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             if questions.count > 1 {
-                Text("Question \(stepIndex + 1) of \(questions.count)")
-                    .font(.caption)
+                Text("QUESTION \(stepIndex + 1) OF \(questions.count)")
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
-            Text(question.question).font(.body.weight(.medium))
+            Text(question.question)
+                .font(.body.weight(.semibold))
 
-            if !showingTextEntry {
-                ForEach(question.options ?? [], id: \.self) { option in
-                    Button(option) { chooseAndAdvance(option) }
-                        .disabled(submitting)
-                }
-                Button("Other") { usingOther = true }
-                    .foregroundStyle(.secondary)
+            VStack(spacing: 8) {
+                ForEach(question.options, id: \.self) { option in
+                    Button {
+                        chooseAndAdvance(option)
+                    } label: {
+                        HStack {
+                            Text(option)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(.primary)
+                                .multilineTextAlignment(.leading)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 14)
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
                     .disabled(submitting)
-            } else {
-                TextField(
-                    question.type == "text" ? (question.placeholder ?? "Your answer") : "Type your own answer",
-                    text: $customText
-                )
-                .textFieldStyle(.roundedBorder)
-                .submitLabel(isLast ? .done : .next)
-                .onSubmit { submitCustomText() }
+                }
+            }
+
+            HStack(spacing: 8) {
+                Rectangle().fill(Color(.separator)).frame(height: 1)
+                Text("or write your own")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize()
+                Rectangle().fill(Color(.separator)).frame(height: 1)
+            }
+            .padding(.vertical, 2)
+
+            HStack(spacing: 8) {
+                TextField("Type your own answer", text: $customText)
+                    .textFieldStyle(.roundedBorder)
+                    .submitLabel(isLast ? .done : .next)
+                    .onSubmit { submitCustomText() }
                 Button(isLast ? "Submit" : "Next") { submitCustomText() }
+                    .buttonStyle(.borderedProminent)
                     .disabled(submitting || customText.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
@@ -59,7 +85,6 @@ struct QuestionWizardView: View {
     private func chooseAndAdvance(_ value: String) {
         answers[question.toolCallId] = value
         customText = ""
-        usingOther = false
         if isLast {
             onSubmit(questions.map { APIClient.QuestionAnswer(toolCallId: $0.toolCallId, answer: answers[$0.toolCallId] ?? "") })
         } else {

@@ -15,7 +15,7 @@ export interface AgentToolState {
  * (patchCode/finalize record their results onto it) so the caller can read
  * both back after generateText returns, regardless of how many steps ran.
  *
- * askChoice/askTextInput deliberately have no `execute`: with no way to
+ * askChoice deliberately has no `execute`: with no way to
  * produce a tool-result, the AI SDK's step loop halts right after the model
  * calls one, which is exactly the "hand this back to a real human" pause we
  * want — the route handler persists the partial conversation and returns.
@@ -72,22 +72,14 @@ export function buildTools(opts: {
   const askChoice = tool({
     description:
       "Ask the user ONE multiple-choice clarifying question. Use only when guessing would likely produce a materially wrong result. " +
-      "If you have several separate questions, call this (and/or askTextInput) multiple times in the SAME turn — one call per question — " +
+      "The UI always offers an 'Other' free-text escape hatch alongside your options, so this is also how to ask something " +
+      "open-ended (like a specific date): just give your 2 best-guess options and let 'Other' cover everything else — " +
+      "there is no separate free-text tool. " +
+      "If you have several separate questions, call this multiple times in the SAME turn — one call per question — " +
       "rather than cramming multiple questions into one, or asking them one at a time across separate turns.",
     inputSchema: z.object({
       question: z.string(),
       options: z.array(z.string()).min(2).max(6),
-    }),
-  });
-
-  const askTextInput = tool({
-    description:
-      "Ask the user ONE free-text clarifying question (e.g. for a specific date). Use only when guessing would likely produce a materially wrong result. " +
-      "If you have several separate questions, call this (and/or askChoice) multiple times in the SAME turn — one call per question — " +
-      "rather than cramming multiple questions into one, or asking them one at a time across separate turns.",
-    inputSchema: z.object({
-      question: z.string(),
-      placeholder: z.string().optional(),
     }),
   });
 
@@ -101,7 +93,7 @@ export function buildTools(opts: {
     },
   });
 
-  return { readCurrentCode, patchCode, askChoice, askTextInput, finalize };
+  return { readCurrentCode, patchCode, askChoice, finalize };
 }
 
 export type AgentTools = ReturnType<typeof buildTools>;
