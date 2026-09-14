@@ -1,0 +1,17 @@
+.DS_Store
+*.DS_Store
+
+# iOS / Xcode
+ios/**/xcuserdata/
+ios/**/*.xcuserstate
+ios/**/DerivedData/
+ios/**/.build/
+ios/**/*.ipa
+ios/**/*.dSYM
+ios/**/*.dSYM.zip
+
+# env
+.env
+.env.local
+.env.*.local
+!.env.example

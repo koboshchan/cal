@@ -1,0 +1,29 @@
+services:
+  web:
+    build:
+      context: ./web
+    ports:
+      # Host 3001 -> container 3000: an unrelated local process already
+      # owns host port 3000 on this machine.
+      - "3001:3000"
+    env_file:
+      - ./web/.env
+    environment:
+      # Docker DNS only — mongo has no published port and no auth, so this
+      # URI only resolves/works from inside the compose network.
+      - MONGODB_URI=mongodb://mongo:27017/cal
+      - NODE_ENV=production
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    # Intentionally no `ports:` — reachable only via the `mongo` Docker DNS
+    # name from other services on this compose network, never from the host.
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo_data:

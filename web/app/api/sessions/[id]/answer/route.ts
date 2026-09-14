@@ -1,0 +1,35 @@
+import { z } from "zod";
+import { requireUser } from "@/lib/auth";
+import { handleApiError } from "@/lib/api-errors";
+import { getOwnedSession, persistSession } from "@/lib/sessions";
+import { continueSessionWithAnswer } from "@/lib/agent/run";
+
+const Body = z.object({ answer: z.string().min(1) });
+
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const user = await requireUser();
+    const { id } = await params;
+    const session = await getOwnedSession(id, user.clerkUserId);
+
+    if (session.status !== "awaiting_input") {
+      return Response.json(
+        { error: `Session is not awaiting input (status: ${session.status})` },
+        { status: 409 },
+      );
+    }
+
+    const { answer } = Body.parse(await request.json());
+    await continueSessionWithAnswer(session, answer);
+    await persistSession(session);
+
+    return Response.json({
+      status: session.status,
+      pendingQuestion: session.pendingQuestion,
+      resultEvents: session.resultEvents,
+      error: session.error,
+    });
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
