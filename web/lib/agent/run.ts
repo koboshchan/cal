@@ -1,4 +1,4 @@
-import { generateText, hasToolCall, stepCountIs, type ModelMessage } from "ai";
+import { APICallError, generateText, hasToolCall, stepCountIs, type ModelMessage } from "ai";
 import { getChatModel } from "./provider";
 import { SYSTEM_PROMPT } from "./systemPrompt";
 import { buildTools, type AgentToolState } from "./tools";
@@ -54,13 +54,28 @@ export async function continueSessionWithAnswer(
   await runLoop(session);
 }
 
+/**
+ * Mutates `session` in place: a follow-up edit request on an already-
+ * finished (or errored) session — "remove the dentist appointment", "move
+ * gym to 6am". Builds on the latest result, not the original upload (see
+ * the resultEvents-first fallback in runLoop), so it composes with any
+ * earlier refinements or manual event deletions.
+ */
+export async function refineSession(session: AgentSessionDoc, prompt: string): Promise<void> {
+  session.messages.push({ role: "user", content: `Follow-up request: ${prompt}` });
+  await runLoop(session);
+}
+
 async function runLoop(session: AgentSessionDoc): Promise<void> {
   session.status = "running";
   try {
     const model = await getChatModel();
     const state: AgentToolState = {};
     const tools = buildTools({
-      inputEvents: session.inputEvents,
+      // The current state of the calendar: prior AI output (including any
+      // manual event deletions) if this isn't the first turn, else the
+      // originally uploaded .ics.
+      inputEvents: session.resultEvents ?? session.inputEvents,
       userPrompt: session.userPrompt,
       imageNote: session.imageNote,
       userAnswers: session.userAnswers,
@@ -117,8 +132,17 @@ async function runLoop(session: AgentSessionDoc): Promise<void> {
         "The agent didn't reach a result within its step limit. Try rephrasing your request.";
     }
   } catch (err) {
+    console.error("agent run failed", err);
     session.status = "error";
-    session.error = err instanceof Error ? err.message : String(err);
+    session.error = describeError(err);
   }
   session.updatedAt = new Date();
+}
+
+function describeError(err: unknown): string {
+  if (APICallError.isInstance(err)) {
+    const body = err.responseBody?.slice(0, 500);
+    return `${err.message} (${err.statusCode} from ${err.url})${body ? `: ${body}` : ""}`;
+  }
+  return err instanceof Error ? err.message : String(err);
 }

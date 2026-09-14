@@ -7,6 +7,8 @@ struct SessionDetailView: View {
     @State private var loadError: String?
     @State private var answerText = ""
     @State private var answering = false
+    @State private var refineText = ""
+    @State private var refining = false
     @State private var icsFileURL: URL?
     @State private var downloadError: String?
 
@@ -19,6 +21,9 @@ struct SessionDetailView: View {
             if let session {
                 Section {
                     Text(session.title).font(.headline)
+                    if let description = session.description, !description.isEmpty {
+                        Text(description).font(.subheadline).foregroundStyle(.secondary)
+                    }
                     Text(session.status.replacingOccurrences(of: "_", with: " "))
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -48,8 +53,8 @@ struct SessionDetailView: View {
                 }
 
                 if session.status == "done", let events = session.resultEvents {
-                    Section("Calendar") {
-                        ForEach(events) { event in
+                    Section("Calendar (swipe to remove)") {
+                        ForEach(Array(events.enumerated()), id: \.offset) { _, event in
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(event.title).font(.body)
                                 if let start = event.startDate, let end = event.endDate {
@@ -65,6 +70,7 @@ struct SessionDetailView: View {
                                 }
                             }
                         }
+                        .onDelete(perform: deleteEvents)
                     }
 
                     Section {
@@ -76,6 +82,14 @@ struct SessionDetailView: View {
                         if let downloadError {
                             Text(downloadError).foregroundStyle(.red)
                         }
+                    }
+                }
+
+                if session.status == "done" || session.status == "error" {
+                    Section("Ask for a change") {
+                        TextField("e.g. \"move gym to 6am\"", text: $refineText)
+                        Button(refining ? "Working…" : "Send") { submitRefine() }
+                            .disabled(refining || refineText.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
             }
@@ -112,6 +126,38 @@ struct SessionDetailView: View {
             } catch {
                 loadError = error.localizedDescription
                 answering = false
+            }
+        }
+    }
+
+    private func submitRefine() {
+        let prompt = refineText.trimmingCharacters(in: .whitespaces)
+        guard !prompt.isEmpty else { return }
+        refining = true
+        Task {
+            do {
+                session = try await APIClient.refine(sessionId: sessionId, prompt: prompt)
+                refineText = ""
+                icsFileURL = nil
+                refining = false
+                if session?.status == "running" {
+                    await pollUntilSettled()
+                }
+            } catch {
+                loadError = error.localizedDescription
+                refining = false
+            }
+        }
+    }
+
+    private func deleteEvents(at offsets: IndexSet) {
+        guard let index = offsets.first else { return }
+        Task {
+            do {
+                session = try await APIClient.deleteEvent(sessionId: sessionId, eventIndex: index)
+                icsFileURL = nil
+            } catch {
+                loadError = error.localizedDescription
             }
         }
     }

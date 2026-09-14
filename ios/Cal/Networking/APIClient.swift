@@ -84,6 +84,21 @@ enum APIClient {
         return try await send(request)
     }
 
+    static func refine(sessionId: String, prompt: String) async throws -> SessionDetail {
+        var request = try await authorizedRequest(path: "/api/sessions/\(sessionId)/refine", method: "POST")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try encoder.encode(["prompt": prompt])
+        return try await send(request)
+    }
+
+    static func deleteEvent(sessionId: String, eventIndex: Int) async throws -> SessionDetail {
+        let request = try await authorizedRequest(
+            path: "/api/sessions/\(sessionId)/events/\(eventIndex)",
+            method: "DELETE"
+        )
+        return try await send(request)
+    }
+
     static func icsURL(sessionId: String) -> URL {
         AppConfig.baseURL.appendingPathComponent("/api/sessions/\(sessionId)/ics")
     }

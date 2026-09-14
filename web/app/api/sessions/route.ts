@@ -3,6 +3,7 @@ import { handleApiError } from "@/lib/api-errors";
 import { getDb } from "@/lib/mongodb";
 import { parseIcs } from "@/lib/ics";
 import { describeImage } from "@/lib/agent/vision";
+import { summarizeRequest } from "@/lib/agent/summarize";
 import { runInitialTurn } from "@/lib/agent/run";
 import { serializeSessionDetail } from "@/lib/sessions";
 import type { AgentSessionDoc } from "@/lib/types";
@@ -61,7 +62,8 @@ export async function POST(request: Request) {
     const session: AgentSessionDoc = {
       userId: user.clerkUserId,
       status: "running",
-      title: userPrompt.slice(0, 80) || "Imported calendar",
+      title: "",
+      description: "",
       userPrompt,
       imageNote,
       inputEvents,
@@ -72,7 +74,12 @@ export async function POST(request: Request) {
       updatedAt: now,
     };
 
-    await runInitialTurn(session);
+    const [, summary] = await Promise.all([
+      runInitialTurn(session),
+      summarizeRequest({ userPrompt, imageNote, eventCount: inputEvents.length }),
+    ]);
+    session.title = summary.title;
+    session.description = summary.description;
 
     const db = await getDb();
     const { insertedId } = await db.collection<AgentSessionDoc>("sessions").insertOne(session);

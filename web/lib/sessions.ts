@@ -1,8 +1,10 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "./mongodb";
+import { generateIcs } from "./ics";
 import type { AgentSessionDoc } from "./types";
 
 export class NotFoundError extends Error {}
+export class InvalidRequestError extends Error {}
 
 export async function getOwnedSession(
   id: string,
@@ -17,12 +19,13 @@ export async function getOwnedSession(
   return session as AgentSessionDoc & { _id: ObjectId };
 }
 
-/** The one JSON shape every session-returning route (create/get/answer) sends. */
+/** The one JSON shape every session-returning route (create/get/answer/refine/delete-event) sends. */
 export function serializeSessionDetail(session: AgentSessionDoc & { _id: ObjectId }) {
   return {
     id: session._id.toString(),
     status: session.status,
     title: session.title,
+    description: session.description,
     userPrompt: session.userPrompt,
     pendingQuestion: session.pendingQuestion,
     resultEvents: session.resultEvents,
@@ -30,6 +33,30 @@ export function serializeSessionDetail(session: AgentSessionDoc & { _id: ObjectI
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,
   };
+}
+
+/** Removes one event from a finished session's result, in place, and re-serializes the .ics. */
+export async function removeResultEvent(
+  session: AgentSessionDoc & { _id: ObjectId },
+  eventIndex: number,
+): Promise<void> {
+  if (session.status !== "done" || !session.resultEvents) {
+    throw new InvalidRequestError("Session has no finished result to edit");
+  }
+  if (!Number.isInteger(eventIndex) || eventIndex < 0 || eventIndex >= session.resultEvents.length) {
+    throw new InvalidRequestError("Event index out of range");
+  }
+
+  const resultEvents = session.resultEvents.filter((_, i) => i !== eventIndex);
+  const resultIcs = generateIcs(resultEvents);
+  session.resultEvents = resultEvents;
+  session.resultIcs = resultIcs;
+  session.updatedAt = new Date();
+
+  const db = await getDb();
+  await db
+    .collection<AgentSessionDoc>("sessions")
+    .updateOne({ _id: session._id }, { $set: { resultEvents, resultIcs, updatedAt: session.updatedAt } });
 }
 
 /**

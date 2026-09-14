@@ -1,6 +1,6 @@
 import { UnauthorizedError, ForbiddenError } from "./auth";
 import { NotConfiguredError } from "./agent/provider";
-import { NotFoundError } from "./sessions";
+import { NotFoundError, InvalidRequestError } from "./sessions";
 
 export function handleApiError(err: unknown): Response {
   if (err instanceof UnauthorizedError) {
@@ -14,6 +14,9 @@ export function handleApiError(err: unknown): Response {
   }
   if (err instanceof NotFoundError) {
     return Response.json({ error: err.message }, { status: 404 });
+  }
+  if (err instanceof InvalidRequestError) {
+    return Response.json({ error: err.message }, { status: 400 });
   }
   console.error(err);
   return Response.json({ error: "Internal error" }, { status: 500 });

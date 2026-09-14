@@ -40,6 +40,8 @@ struct SessionDetail: Codable, Identifiable {
     let id: String
     let status: String
     let title: String
+    // Optional: older sessions predate this field.
+    let description: String?
     let userPrompt: String
     let pendingQuestion: PendingQuestion?
     let resultEvents: [NormalizedEvent]?

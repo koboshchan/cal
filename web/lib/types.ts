@@ -58,6 +58,8 @@ export interface AgentSessionDoc {
   userId: string; // clerkUserId
   status: SessionStatus;
   title: string;
+  /** AI-cleaned-up restatement of userPrompt, shown to the user; userPrompt itself is kept verbatim for the agent. */
+  description: string;
   userPrompt: string;
   imageNote?: string;
   inputEvents: NormalizedEvent[];
