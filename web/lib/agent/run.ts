@@ -5,7 +5,7 @@ import { buildTools, type AgentToolState } from "./tools";
 import { generateIcs } from "../ics";
 import type { AgentSessionDoc } from "../types";
 
-const MAX_STEPS = 8;
+const MAX_STEPS = 25;
 
 function buildInitialUserMessage(session: AgentSessionDoc): ModelMessage {
   const lines = [`User's request: "${session.userPrompt}"`];
@@ -126,6 +126,19 @@ async function runLoop(session: AgentSessionDoc): Promise<void> {
         toolName: askCall.toolName as "askChoice" | "askTextInput",
       };
       session.status = "awaiting_input";
+    } else if (result.steps.length <= 1 && result.toolCalls.length === 0 && !result.text) {
+      // A single empty step with no tool call and no text isn't a step-limit
+      // problem — the model returned nothing the moment `tools` was present
+      // in the request, which usually means the configured model/provider
+      // doesn't actually support function calling (even though the HTTP
+      // call itself succeeded).
+      session.status = "error";
+      session.error =
+        "The configured model returned an empty response as soon as tools were included in the request " +
+        "(finishReason: " +
+        result.finishReason +
+        "). This usually means the model doesn't actually support function/tool calling — try a " +
+        "different model in the admin settings.";
     } else {
       session.status = "error";
       session.error =

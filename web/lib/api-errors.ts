@@ -1,8 +1,12 @@
+import { ZodError } from "zod";
 import { UnauthorizedError, ForbiddenError } from "./auth";
 import { NotConfiguredError } from "./agent/provider";
 import { NotFoundError, InvalidRequestError } from "./sessions";
 
 export function handleApiError(err: unknown): Response {
+  if (err instanceof ZodError) {
+    return Response.json({ error: err.issues[0]?.message ?? "Invalid request body" }, { status: 400 });
+  }
   if (err instanceof UnauthorizedError) {
     return Response.json({ error: err.message }, { status: 401 });
   }

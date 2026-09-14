@@ -18,10 +18,12 @@ export async function getChatModel() {
     );
   }
   const provider = createOpenAI({ baseURL: settings.baseURL, apiKey: settings.apiKey });
-  // `provider(id)` defaults to OpenAI's newer Responses API (`/responses`).
-  // Force Chat Completions (`/chat/completions`) since that's the only
-  // surface most OpenAI-compatible proxies (this app's whole point) implement.
-  return provider.chat(settings.model);
+  // Responses API (`/responses`): required for reasoning models like
+  // gpt-5.6-luna, which reject function tools on Chat Completions unless
+  // reasoning_effort is disabled. Chat-completions-only proxies (e.g. a
+  // self-hosted OpenWebUI instance) won't work with this provider — point
+  // the admin settings at a real /responses-capable endpoint instead.
+  return provider.responses(settings.model);
 }
 
 export async function getVisionModel() {
@@ -32,5 +34,5 @@ export async function getVisionModel() {
     );
   }
   const provider = createOpenAI({ baseURL: settings.baseURL, apiKey: settings.apiKey });
-  return provider.chat(settings.visionModel || settings.model);
+  return provider.responses(settings.visionModel || settings.model);
 }
