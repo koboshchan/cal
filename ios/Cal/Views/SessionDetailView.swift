@@ -132,6 +132,11 @@ struct SessionDetailView: View {
                 }
             }
         }
+        // `navigationBarTitleDisplayMode(.inline)` only actually collapses
+        // the nav bar's reserved title space when there's a real title
+        // behind it — leaving `navigationTitle` unset here left a tall
+        // empty gap where a large title would otherwise go, never drawn.
+        .navigationTitle(session?.title ?? "New schedule")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             // Only shown when this view has no back button of its own to
