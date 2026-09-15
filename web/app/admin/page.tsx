@@ -1,16 +1,14 @@
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
-import { getDb } from "@/lib/mongodb";
-import type { UserDoc } from "@/lib/types";
+import { requireUser, isAdmin } from "@/lib/auth";
 import AdminSettingsForm from "./settings-form";
 
 export default async function AdminPage() {
   const { userId } = await auth();
   if (!userId) redirect("/");
 
-  const db = await getDb();
-  const user = await db.collection<UserDoc>("users").findOne({ clerkUserId: userId });
-  if (user?.role !== "admin") redirect("/");
+  const user = await requireUser();
+  if (!(await isAdmin(user))) redirect("/");
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6 px-6 py-12">

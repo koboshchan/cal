@@ -1,20 +1,12 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
-import { getDb } from "@/lib/mongodb";
-import type { UserDoc } from "@/lib/types";
+import { requireUser, isAdmin } from "@/lib/auth";
 
 export default async function Nav() {
   const { userId } = await auth();
 
-  let role: string | undefined;
-  if (userId) {
-    const db = await getDb();
-    const user = await db
-      .collection<UserDoc>("users")
-      .findOne({ clerkUserId: userId });
-    role = user?.role;
-  }
+  const admin = userId ? await isAdmin(await requireUser()) : false;
 
   return (
     <header className="flex items-center justify-between px-6 py-4 border-b">
@@ -24,7 +16,7 @@ export default async function Nav() {
       <nav className="flex items-center gap-4">
         {userId ? (
           <>
-            {role === "admin" && (
+            {admin && (
               <Link href="/admin" className="text-sm text-gray-600">
                 Admin
               </Link>

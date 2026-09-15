@@ -16,13 +16,10 @@ export type NormalizedEvent = z.infer<typeof NormalizedEventSchema>;
 
 export const NormalizedEventArraySchema = z.array(NormalizedEventSchema);
 
-export type Role = "admin" | "user";
-
 export interface UserDoc {
   _id?: import("mongodb").ObjectId;
   clerkUserId: string;
   email: string;
-  role: Role;
   createdAt: Date;
   /** Opaque secret identifying this user's calendar-subscription feed (calendar apps can't send our bearer token). */
   calendarFeedToken?: string;
