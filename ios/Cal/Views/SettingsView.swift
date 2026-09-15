@@ -60,11 +60,16 @@ struct SettingsView: View {
         }
     }
 
-    /// `webcal://`/`webcals://` tell the OS to hand the URL to Calendar as a
-    /// live subscription rather than fetching it as a plain download.
+    /// `webcal://` tells the OS to hand the URL to Calendar as a live
+    /// subscription rather than fetching it as a plain download. Always
+    /// plain `webcal`, never `webcals`: the "secure" variant was never
+    /// actually implemented on iOS (or most other platforms) — it fails
+    /// with an unhelpful LSApplicationWorkspaceErrorDomain error — and
+    /// `webcal://` itself works fine pointed at an https host; the scheme
+    /// name doesn't change what transport Calendar actually fetches over.
     private func webcalURL(for path: String) -> URL? {
         var components = URLComponents(url: AppConfig.baseURL, resolvingAgainstBaseURL: false)
-        components?.scheme = AppConfig.baseURL.scheme == "https" ? "webcals" : "webcal"
+        components?.scheme = "webcal"
         components?.path = path
         return components?.url
     }
