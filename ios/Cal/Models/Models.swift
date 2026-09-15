@@ -52,8 +52,11 @@ struct SessionDetail: Codable, Identifiable {
     let description: String?
     let userPrompt: String
     let currentStage: String?
-    let pendingQuestions: [PendingQuestion]?
-    let userAnswers: [UserAnswer]?
+    // var, not let: SessionDetailView optimistically updates these the
+    // instant the last question in a batch is answered, without waiting
+    // for the round trip to the server to confirm it.
+    var pendingQuestions: [PendingQuestion]?
+    var userAnswers: [UserAnswer]?
     let resultEvents: [NormalizedEvent]?
     let error: String?
 }

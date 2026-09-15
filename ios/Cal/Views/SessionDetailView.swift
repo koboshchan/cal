@@ -139,9 +139,13 @@ struct SessionDetailView: View {
             // its own NavigationStack) — when pushed from the session list,
             // the back chevron already dismisses it, so a second "Done"
             // button would just be a redundant way to do the same thing.
-            if let onDone, session?.status == "done" || session?.status == "error" {
+            if let onDone {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", action: onDone)
+                    if isWorking {
+                        ProgressView()
+                    } else if session?.status == "done" || session?.status == "error" {
+                        Button("Done", action: onDone)
+                    }
                 }
             }
         }
@@ -151,6 +155,14 @@ struct SessionDetailView: View {
             }
         }
         .task { await pollUntilSettled() }
+    }
+
+    /// Drives the toolbar's Done-vs-spinner swap: true whenever the agent is
+    /// actively doing something, whether that's the initial generation, a
+    /// step still running after the user answered, or an in-flight
+    /// answer/refine request.
+    private var isWorking: Bool {
+        answering || refining || session?.status == "running"
     }
 
     /// Drives multi-stage generation forward: each call both advances the
@@ -176,6 +188,18 @@ struct SessionDetailView: View {
     }
 
     private func submitAnswers(_ answers: [APIClient.QuestionAnswer]) {
+        // Show the answers right away instead of waiting for the server to
+        // confirm them — the QuestionWizardView already collected all of
+        // this locally, and the server will send back the same data anyway.
+        if let pending = session?.pendingQuestions {
+            let newlyAnswered = pending.compactMap { question -> UserAnswer? in
+                guard let match = answers.first(where: { $0.toolCallId == question.toolCallId }) else { return nil }
+                return UserAnswer(question: question.question, answer: match.answer)
+            }
+            session?.userAnswers = (session?.userAnswers ?? []) + newlyAnswered
+            session?.pendingQuestions = nil
+        }
+
         answering = true
         Task {
             do {
