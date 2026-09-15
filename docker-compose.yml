@@ -22,8 +22,7 @@ services:
     # Intentionally no `ports:` — reachable only via the `mongo` Docker DNS
     # name from other services on this compose network, never from the host.
     volumes:
-      - mongo_data:/data/db
+      # Bind-mounted to a local, gitignored directory (rather than a named
+      # Docker volume) so the data is easy to find/back up/wipe by hand.
+      - ./data/mongo:/data/db
     restart: unless-stopped
-
-volumes:
-  mongo_data:

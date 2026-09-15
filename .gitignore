@@ -15,3 +15,6 @@ ios/**/*.dSYM.zip
 .env.local
 .env.*.local
 !.env.example
+
+# local MongoDB data (bind-mounted by docker-compose.yml)
+/data/mongo/
