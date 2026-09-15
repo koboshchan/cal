@@ -12,5 +12,5 @@ enum AppConfig {
     // Swift 6 strict concurrency requires global mutable state to opt out
     // of its data-race checks explicitly; this is a config value set once
     // (here, or by editing this file) and only ever read afterwards.
-    nonisolated(unsafe) static var baseURL = URL(string: "http://localhost:3001")!
+    nonisolated(unsafe) static var baseURL = URL(string: "https://cal.kobosh.com")!
 }
