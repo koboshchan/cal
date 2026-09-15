@@ -8,15 +8,13 @@ private struct EditingEvent: Identifiable {
 
 struct SessionDetailView: View {
     let sessionId: String
-    /// When this view is pushed inside another sheet's own NavigationStack
-    /// (the "New schedule" flow), the local `dismiss()` only pops back to
-    /// that form — it doesn't close the sheet itself. Pass the enclosing
-    /// sheet's dismiss action here so "Done" closes the whole popup instead
-    /// of leaving it open on the form. Left nil for the plain "tap a past
-    /// session from the list" navigation, where popping back is correct.
+    /// Set only in the "New schedule" flow, where this view is pushed inside
+    /// a sheet's own NavigationStack and so has no back button of its own —
+    /// the toolbar's "Done" button (shown only when this is set) calls it to
+    /// close the whole sheet. Left nil for the plain "tap a past session
+    /// from the list" navigation, where the back chevron already suffices.
     var onDone: (() -> Void)? = nil
 
-    @Environment(\.dismiss) private var dismiss
     @State private var session: SessionDetail?
     @State private var loadError: String?
     @State private var answering = false
@@ -47,9 +45,6 @@ struct SessionDetailView: View {
                     if let description = session.description, !description.isEmpty {
                         Text(description).font(.subheadline).foregroundStyle(.secondary)
                     }
-                    Text(session.status.replacingOccurrences(of: "_", with: " "))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
 
                 if session.status == "running" {
@@ -86,7 +81,7 @@ struct SessionDetailView: View {
                 }
 
                 if session.status == "done", let events = session.resultEvents {
-                    Section("Calendar (swipe for actions)") {
+                    Section("Calendar") {
                         ForEach(Array(events.enumerated()), id: \.offset) { index, event in
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(event.title).font(.body)
@@ -117,11 +112,13 @@ struct SessionDetailView: View {
                     Section {
                         if let icsFileURL {
                             ShareLink("Share .ics", item: icsFileURL)
+                        } else if let downloadError {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(downloadError).foregroundStyle(.red)
+                                Button("Retry") { downloadIcs() }
+                            }
                         } else {
-                            Button("Download .ics") { downloadIcs() }
-                        }
-                        if let downloadError {
-                            Text(downloadError).foregroundStyle(.red)
+                            HStack { ProgressView(); Text("Preparing your calendar file…") }
                         }
                     }
                 }
@@ -135,17 +132,16 @@ struct SessionDetailView: View {
                 }
             }
         }
-        .navigationTitle(session?.title ?? "Session")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if session?.status == "done" || session?.status == "error" {
+            // Only shown when this view has no back button of its own to
+            // rely on (the "New schedule" flow, presented as a sheet with
+            // its own NavigationStack) — when pushed from the session list,
+            // the back chevron already dismisses it, so a second "Done"
+            // button would just be a redundant way to do the same thing.
+            if let onDone, session?.status == "done" || session?.status == "error" {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        if let onDone {
-                            onDone()
-                        } else {
-                            dismiss()
-                        }
-                    }
+                    Button("Done", action: onDone)
                 }
             }
         }
@@ -167,7 +163,10 @@ struct SessionDetailView: View {
                 let latest = try await APIClient.continueSession(id: sessionId)
                 session = latest
                 loadError = nil
-                if latest.status != "running" { return }
+                if latest.status != "running" {
+                    if latest.status == "done" { downloadIcs() }
+                    return
+                }
             } catch {
                 loadError = error.localizedDescription
                 return
@@ -184,6 +183,8 @@ struct SessionDetailView: View {
                 answering = false
                 if session?.status == "running" {
                     await pollUntilSettled()
+                } else if session?.status == "done" {
+                    downloadIcs()
                 }
             } catch {
                 loadError = error.localizedDescription
@@ -204,6 +205,8 @@ struct SessionDetailView: View {
                 refining = false
                 if session?.status == "running" {
                     await pollUntilSettled()
+                } else if session?.status == "done" {
+                    downloadIcs()
                 }
             } catch {
                 loadError = error.localizedDescription
@@ -217,6 +220,7 @@ struct SessionDetailView: View {
             do {
                 session = try await APIClient.deleteEvent(sessionId: sessionId, eventIndex: index)
                 icsFileURL = nil
+                downloadIcs()
             } catch {
                 loadError = error.localizedDescription
             }
@@ -229,6 +233,7 @@ struct SessionDetailView: View {
                 session = try await APIClient.updateEvent(sessionId: sessionId, eventIndex: index, event: event)
                 icsFileURL = nil
                 editingEvent = nil
+                downloadIcs()
             } catch {
                 loadError = error.localizedDescription
                 editingEvent = nil
