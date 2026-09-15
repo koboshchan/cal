@@ -1,8 +1,8 @@
 import SwiftUI
+import UIKit
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
 
     @State private var loading = false
     @State private var errorMessage: String?
@@ -44,7 +44,15 @@ struct SettingsView: View {
                 guard let webcalURL = webcalURL(for: feed.path) else {
                     throw APIError.server("Couldn't build a calendar subscription URL")
                 }
-                openURL(webcalURL)
+                // SwiftUI's `@Environment(\.openURL)` has a well-known bug on
+                // recent iOS versions where it silently no-ops instead of
+                // launching anything — UIApplication's completion-handler
+                // variant is the reliable way to actually trigger it, and
+                // also the only one that tells us whether it worked.
+                let opened = await UIApplication.shared.open(webcalURL)
+                if !opened {
+                    errorMessage = "Couldn't open the calendar subscription link."
+                }
             } catch {
                 errorMessage = error.localizedDescription
             }
