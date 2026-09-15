@@ -24,7 +24,7 @@ export async function summarizeRequest(opts: {
 
   const context: string[] = [];
   if (userPrompt) context.push(`Request: ${userPrompt}`);
-  if (imageNote) context.push(`Attached image shows: ${imageNote}`);
+  if (imageNote) context.push(`Attached image(s) show: ${imageNote}`);
   if (eventCount > 0) context.push(`An existing calendar with ${eventCount} event(s) was also uploaded.`);
   if (context.length === 0) return { title: "New schedule", description: "Imported calendar" };
 

@@ -12,7 +12,7 @@ Call \`patchCode\` with the FULL source of a program that defines exactly one fu
 \`input\` (already provided to your code, do not redeclare it) has this shape:
 - \`existingEvents\`: NormalizedEvent[] — events already on the user's calendar (from an uploaded .ics, or from a prior generation this session refined), if any. Empty array if none.
 - \`userPrompt\`: string — the user's freeform description of what they want.
-- \`imageNote\`: string | undefined — a text description of an image the user attached, if any (e.g. a photo of a printed schedule). You never see the image itself, only this description.
+- \`imageNote\`: string | undefined — a text description of the image(s) the user attached, if any (e.g. one or more photos of a printed schedule). You never see the images themselves, only this description.
 - \`userAnswers\`: {question, answer}[] — answers to clarifying questions you've already asked, in order.
 - \`now\`: string — the current date/time, as a NAIVE local string (no Z/offset) in the user's own timezone below. Use it to resolve relative phrases like "next Monday" or "this month".
 - \`timezone\`: string — the user's IANA timezone, e.g. "America/Los_Angeles". You never need to convert anything yourself — see the note on start/end below.

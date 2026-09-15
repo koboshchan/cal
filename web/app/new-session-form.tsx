@@ -8,7 +8,7 @@ export default function NewSessionForm() {
   const router = useRouter();
   const [textPrompt, setTextPrompt] = useState("");
   const [icsFile, setIcsFile] = useState<File | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export default function NewSessionForm() {
       const form = new FormData();
       if (textPrompt.trim()) form.set("textPrompt", textPrompt.trim());
       if (icsFile) form.set("icsFile", icsFile);
-      if (imageFile) form.set("imageFile", imageFile);
+      imageFiles.forEach((file) => form.append("imageFiles", file));
       form.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
 
       const res = await fetch("/api/sessions", { method: "POST", body: form });
@@ -54,11 +54,12 @@ export default function NewSessionForm() {
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <label className="flex flex-1 flex-col gap-1 text-sm text-gray-600">
-            Photo of a schedule (optional)
+            Photos of a schedule (optional)
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+              multiple
+              onChange={(e) => setImageFiles(Array.from(e.target.files ?? []))}
               className="text-sm"
             />
           </label>

@@ -72,7 +72,7 @@ enum APIClient {
         let _: OK = try await send(request)
     }
 
-    static func createSession(textPrompt: String, icsData: Data?, imageData: Data?) async throws -> SessionDetail {
+    static func createSession(textPrompt: String, icsData: Data?, imageDatas: [Data]) async throws -> SessionDetail {
         var request = try await authorizedRequest(path: "/api/sessions", method: "POST")
         let boundary = "Boundary-\(UUID().uuidString)"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
@@ -80,7 +80,7 @@ enum APIClient {
             boundary: boundary,
             textPrompt: textPrompt,
             icsData: icsData,
-            imageData: imageData,
+            imageDatas: imageDatas,
             timezone: TimeZone.current.identifier
         )
         return try await send(request)
@@ -182,7 +182,7 @@ enum APIClient {
         boundary: String,
         textPrompt: String,
         icsData: Data?,
-        imageData: Data?,
+        imageDatas: [Data],
         timezone: String
     ) -> Data {
         var body = Data()
@@ -204,7 +204,9 @@ enum APIClient {
 
         if !textPrompt.isEmpty { appendField(name: "textPrompt", value: textPrompt) }
         if let icsData { appendFile(name: "icsFile", filename: "calendar.ics", mimeType: "text/calendar", data: icsData) }
-        if let imageData { appendFile(name: "imageFile", filename: "image.jpg", mimeType: "image/jpeg", data: imageData) }
+        for (index, imageData) in imageDatas.enumerated() {
+            appendFile(name: "imageFiles", filename: "image\(index).jpg", mimeType: "image/jpeg", data: imageData)
+        }
         appendField(name: "timezone", value: timezone)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         return body

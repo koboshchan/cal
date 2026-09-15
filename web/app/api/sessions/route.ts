@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { getDb } from "@/lib/mongodb";
 import { parseIcs } from "@/lib/ics";
-import { describeImage } from "@/lib/agent/vision";
+import { describeImages } from "@/lib/agent/vision";
 import { summarizeRequest } from "@/lib/agent/summarize";
 import { initializeSession } from "@/lib/agent/run";
 import { serializeSessionDetail } from "@/lib/sessions";
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const userPrompt = String(form.get("textPrompt") ?? "").trim();
     const icsFile = form.get("icsFile");
-    const imageFile = form.get("imageFile");
+    const imageFiles = form.getAll("imageFiles").filter((f): f is File => f instanceof File);
     const timezone = validTimezone(String(form.get("timezone") ?? ""));
 
     if (!userPrompt && !icsFile) {
@@ -51,12 +51,14 @@ export async function POST(request: Request) {
     }
 
     let imageNote: string | undefined;
-    if (imageFile instanceof File) {
-      const buf = Buffer.from(await imageFile.arrayBuffer());
-      imageNote = await describeImage(
-        buf.toString("base64"),
-        imageFile.type || "image/png",
+    if (imageFiles.length > 0) {
+      const images = await Promise.all(
+        imageFiles.map(async (file) => ({
+          base64: Buffer.from(await file.arrayBuffer()).toString("base64"),
+          mediaType: file.type || "image/jpeg",
+        })),
       );
+      imageNote = await describeImages(images);
     }
 
     const summary = await summarizeRequest({ userPrompt, imageNote, eventCount: inputEvents.length });

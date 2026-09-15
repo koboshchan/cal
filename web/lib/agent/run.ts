@@ -11,7 +11,7 @@ const MAX_STEPS = 25;
 function buildInitialUserMessage(session: AgentSessionDoc): ModelMessage {
   const lines = [`User's request: "${session.userPrompt}"`];
   if (session.imageNote) {
-    lines.push(`They also attached an image; here's a description of it: ${session.imageNote}`);
+    lines.push(`They also attached image(s); here's a description of what's in them: ${session.imageNote}`);
   }
   if (session.inputEvents.length > 0) {
     lines.push(

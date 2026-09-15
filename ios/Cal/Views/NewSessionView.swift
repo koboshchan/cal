@@ -1,13 +1,14 @@
 import SwiftUI
 import PhotosUI
 import UniformTypeIdentifiers
+import UIKit
 
 struct NewSessionView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var textPrompt = ""
-    @State private var photoItem: PhotosPickerItem?
-    @State private var imageData: Data?
+    @State private var photoItems: [PhotosPickerItem] = []
+    @State private var imageDatas: [Data] = []
     @State private var showingFileImporter = false
     @State private var icsData: Data?
     @State private var icsFilename: String?
@@ -28,10 +29,13 @@ struct NewSessionView: View {
             }
 
             Section("Optional attachments") {
-                PhotosPicker("Photo of a schedule", selection: $photoItem, matching: .images)
-                if imageData != nil {
-                    Label("Image attached", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                PhotosPicker("Photos of a schedule", selection: $photoItems, matching: .images)
+                if !imageDatas.isEmpty {
+                    Label(
+                        "\(imageDatas.count) image\(imageDatas.count == 1 ? "" : "s") attached",
+                        systemImage: "checkmark.circle.fill"
+                    )
+                    .foregroundStyle(.green)
                 }
 
                 Button("Existing calendar (.ics)") { showingFileImporter = true }
@@ -55,8 +59,22 @@ struct NewSessionView: View {
                     .disabled(submitting || (textPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && icsData == nil))
             }
         }
-        .onChange(of: photoItem) { _, newValue in
-            Task { imageData = try? await newValue?.loadTransferable(type: Data.self) }
+        .onChange(of: photoItems) { _, newItems in
+            Task {
+                var converted: [Data] = []
+                for item in newItems {
+                    guard let raw = try? await item.loadTransferable(type: Data.self) else { continue }
+                    // The Photos library commonly hands back HEIC; re-encode
+                    // as JPEG on-device so what we upload (and what the
+                    // server's vision model sees) is always a universally
+                    // supported format, never HEIC.
+                    guard let uiImage = UIImage(data: raw), let jpeg = uiImage.jpegData(compressionQuality: 0.85) else {
+                        continue
+                    }
+                    converted.append(jpeg)
+                }
+                imageDatas = converted
+            }
         }
         .fileImporter(isPresented: $showingFileImporter, allowedContentTypes: [icsContentType]) { result in
             guard case .success(let url) = result else { return }
@@ -94,7 +112,7 @@ struct NewSessionView: View {
                 let session = try await APIClient.createSession(
                     textPrompt: textPrompt.trimmingCharacters(in: .whitespacesAndNewlines),
                     icsData: icsData,
-                    imageData: imageData
+                    imageDatas: imageDatas
                 )
                 createdSession = session
                 showingCreatedSession = true
