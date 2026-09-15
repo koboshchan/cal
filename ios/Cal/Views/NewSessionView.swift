@@ -63,14 +63,15 @@ struct NewSessionView: View {
             Task {
                 var converted: [Data] = []
                 for item in newItems {
-                    guard let raw = try? await item.loadTransferable(type: Data.self) else { continue }
-                    // The Photos library commonly hands back HEIC; re-encode
-                    // as JPEG on-device so what we upload (and what the
-                    // server's vision model sees) is always a universally
-                    // supported format, never HEIC.
-                    guard let uiImage = UIImage(data: raw), let jpeg = uiImage.jpegData(compressionQuality: 0.85) else {
-                        continue
-                    }
+                    guard let raw = try? await item.loadTransferable(type: Data.self),
+                          let uiImage = UIImage(data: raw),
+                          // The Photos library commonly hands back HEIC, at
+                          // full camera resolution; downscale and re-encode
+                          // as JPEG on-device so HEIC is never sent, and so
+                          // a handful of photos doesn't blow past the
+                          // server's request size limit.
+                          let jpeg = resizedJPEGData(from: uiImage)
+                    else { continue }
                     converted.append(jpeg)
                 }
                 imageDatas = converted
@@ -95,6 +96,20 @@ struct NewSessionView: View {
 
     private var icsContentType: UTType {
         UTType(filenameExtension: "ics") ?? .data
+    }
+
+    /// Downscales to at most 1600px on the long side (plenty for the vision
+    /// model to read a schedule/timetable) before JPEG-encoding, so photos
+    /// straight from the camera don't multiply into a huge multipart body.
+    private func resizedJPEGData(from image: UIImage, maxDimension: CGFloat = 1600, quality: CGFloat = 0.8) -> Data? {
+        let size = image.size
+        let scale = min(1, maxDimension / max(size.width, size.height))
+        guard scale < 1 else { return image.jpegData(compressionQuality: quality) }
+        let newSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let resized = UIGraphicsImageRenderer(size: newSize).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+        return resized.jpegData(compressionQuality: quality)
     }
 
     private func loadIcs(from url: URL) {
