@@ -76,7 +76,8 @@ struct EditEventView: View {
             allDay: allDay,
             location: location.isEmpty ? nil : location,
             description: notes.isEmpty ? nil : notes,
-            rrule: rrule.isEmpty ? nil : rrule
+            rrule: rrule.isEmpty ? nil : rrule,
+            alarms: original.alarms
         )
         onSave(updated)
     }

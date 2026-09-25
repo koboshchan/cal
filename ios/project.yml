@@ -22,6 +22,11 @@ targets:
         product: ClerkKit
       - package: Clerk
         product: ClerkKitUI
+    entitlements:
+      path: Cal/Cal.entitlements
+      properties:
+        com.apple.developer.applesignin:
+          - Default
     info:
       path: Cal/Info.plist
       properties:

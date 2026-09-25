@@ -17,6 +17,7 @@ struct SessionDetailView: View {
 
     @State private var session: SessionDetail?
     @State private var loadError: String?
+    @State private var isOfflineBannerVisible = false
     @State private var answering = false
     @State private var refineText = ""
     @State private var refining = false
@@ -24,18 +25,21 @@ struct SessionDetailView: View {
     @State private var downloadError: String?
     @State private var editingEvent: EditingEvent?
 
-    /// `initialSession`: when known already (right after creating it), show
-    /// the title/description immediately instead of a blank screen until
-    /// the first /continue round-trip comes back.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// When `initialSession` is provided, use it. Otherwise, look up `DataCache`
+    /// for any cached version of this session so the user sees their schedule
+    /// immediately while offline or before the round-trip completes.
     init(sessionId: String, initialSession: SessionDetail? = nil, onDone: (() -> Void)? = nil) {
         self.sessionId = sessionId
         self.onDone = onDone
-        _session = State(initialValue: initialSession)
+        let cached = initialSession ?? DataCache.shared.loadSessionDetail(id: sessionId)
+        _session = State(initialValue: cached)
     }
 
     var body: some View {
         List {
-            if let loadError {
+            if let loadError, !isOfflineBannerVisible {
                 Text(loadError).foregroundStyle(.red)
             }
 
@@ -48,11 +52,18 @@ struct SessionDetailView: View {
                 }
 
                 if session.status == "running" {
-                    Section { HStack { ProgressView(); Text(session.currentStage ?? "Working on it…") } }
+                    Section {
+                        HStack {
+                            ProgressView()
+                            Text(session.currentStage ?? "Working on it…")
+                        }
+                    }
                 }
 
                 if session.status == "error", let error = session.error {
-                    Section { Text(error).foregroundStyle(.red) }
+                    Section {
+                        Text(error).foregroundStyle(.red)
+                    }
                 }
 
                 if let userAnswers = session.userAnswers, !userAnswers.isEmpty {
@@ -98,10 +109,14 @@ struct SessionDetailView: View {
                                 }
                             }
                             .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) { deleteEvent(index) } label: {
+                                Button(role: .destructive) {
+                                    deleteEvent(index)
+                                } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
-                                Button { editingEvent = EditingEvent(index: index, event: event) } label: {
+                                Button {
+                                    editingEvent = EditingEvent(index: index, event: event)
+                                } label: {
                                     Label("Edit", systemImage: "pencil")
                                 }
                                 .tint(.orange)
@@ -117,8 +132,14 @@ struct SessionDetailView: View {
                                 Text(downloadError).foregroundStyle(.red)
                                 Button("Retry") { downloadIcs() }
                             }
+                        } else if let events = session.resultEvents, !events.isEmpty,
+                                  let localURL = ICSGenerator.generateTempFile(events: events, title: session.title) {
+                            ShareLink("Share .ics", item: localURL)
                         } else {
-                            HStack { ProgressView(); Text("Preparing your calendar file…") }
+                            HStack {
+                                ProgressView()
+                                Text("Preparing your calendar file…")
+                            }
                         }
                     }
                 }
@@ -154,12 +175,36 @@ struct SessionDetailView: View {
                 }
             }
         }
+        .safeAreaInset(edge: .top) {
+            if isOfflineBannerVisible {
+                OfflineBannerView(
+                    message: "Internet is not reachable",
+                    secondaryText: "Showing cached schedule events",
+                    onRetry: {
+                        Task { await pollUntilSettled() }
+                    },
+                    onDismiss: {
+                        withAnimation(.snappy) {
+                            isOfflineBannerVisible = false
+                        }
+                    }
+                )
+                .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
+            }
+        }
         .sheet(item: $editingEvent) { editing in
             EditEventView(original: editing.event) { updated in
                 updateEvent(at: editing.index, with: updated)
             }
         }
         .task { await pollUntilSettled() }
+        .onReceive(NotificationCenter.default.publisher(for: .networkDidBecomeReachable)) { _ in
+            if isOfflineBannerVisible {
+                Task {
+                    await pollUntilSettled()
+                }
+            }
+        }
     }
 
     /// Drives the toolbar's Done-vs-spinner swap: true whenever the agent is
@@ -180,12 +225,24 @@ struct SessionDetailView: View {
                 let latest = try await APIClient.continueSession(id: sessionId)
                 session = latest
                 loadError = nil
+                DataCache.shared.saveSessionDetail(latest)
+                withAnimation(.snappy) {
+                    isOfflineBannerVisible = false
+                }
                 if latest.status != "running" {
                     if latest.status == "done" { downloadIcs() }
                     return
                 }
             } catch {
-                loadError = error.localizedDescription
+                if session != nil {
+                    // Retain the cached session and events so user can still access them,
+                    // and show the top banner.
+                    withAnimation(.snappy) {
+                        isOfflineBannerVisible = true
+                    }
+                } else {
+                    loadError = error.localizedDescription
+                }
                 return
             }
             try? await Task.sleep(for: .seconds(1))
@@ -208,11 +265,13 @@ struct SessionDetailView: View {
         answering = true
         Task {
             do {
-                session = try await APIClient.answer(sessionId: sessionId, answers: answers)
+                let updated = try await APIClient.answer(sessionId: sessionId, answers: answers)
+                session = updated
+                DataCache.shared.saveSessionDetail(updated)
                 answering = false
-                if session?.status == "running" {
+                if updated.status == "running" {
                     await pollUntilSettled()
-                } else if session?.status == "done" {
+                } else if updated.status == "done" {
                     downloadIcs()
                 }
             } catch {
@@ -228,13 +287,15 @@ struct SessionDetailView: View {
         refining = true
         Task {
             do {
-                session = try await APIClient.refine(sessionId: sessionId, prompt: prompt)
+                let updated = try await APIClient.refine(sessionId: sessionId, prompt: prompt)
+                session = updated
+                DataCache.shared.saveSessionDetail(updated)
                 refineText = ""
                 icsFileURL = nil
                 refining = false
-                if session?.status == "running" {
+                if updated.status == "running" {
                     await pollUntilSettled()
-                } else if session?.status == "done" {
+                } else if updated.status == "done" {
                     downloadIcs()
                 }
             } catch {
@@ -247,7 +308,9 @@ struct SessionDetailView: View {
     private func deleteEvent(_ index: Int) {
         Task {
             do {
-                session = try await APIClient.deleteEvent(sessionId: sessionId, eventIndex: index)
+                let updated = try await APIClient.deleteEvent(sessionId: sessionId, eventIndex: index)
+                session = updated
+                DataCache.shared.saveSessionDetail(updated)
                 icsFileURL = nil
                 downloadIcs()
             } catch {
@@ -259,7 +322,9 @@ struct SessionDetailView: View {
     private func updateEvent(at index: Int, with event: NormalizedEvent) {
         Task {
             do {
-                session = try await APIClient.updateEvent(sessionId: sessionId, eventIndex: index, event: event)
+                let updated = try await APIClient.updateEvent(sessionId: sessionId, eventIndex: index, event: event)
+                session = updated
+                DataCache.shared.saveSessionDetail(updated)
                 icsFileURL = nil
                 editingEvent = nil
                 downloadIcs()

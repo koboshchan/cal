@@ -11,6 +11,10 @@ export const NormalizedEventSchema = z.object({
     .string()
     .optional()
     .describe("An RRULE string per RFC 5545, e.g. FREQ=WEEKLY;BYDAY=MO,WE,FR"),
+  alarms: z
+    .array(z.union([z.number(), z.string()]))
+    .optional()
+    .describe("List of alarm trigger offsets, e.g. [86400] for 1 day, [3600] for 1 hour, [300] for 5 minutes"),
 });
 export type NormalizedEvent = z.infer<typeof NormalizedEventSchema>;
 

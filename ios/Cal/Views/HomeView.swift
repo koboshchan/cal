@@ -2,21 +2,20 @@ import SwiftUI
 import ClerkKitUI
 
 struct HomeView: View {
-    @State private var me: Me?
-    @State private var sessions: [SessionSummary] = []
-    @State private var errorMessage: String?
-    @State private var showingNewSession = false
-    @State private var showingSettings = false
-    @State private var renamingSession: SessionSummary?
-    @State private var renameText = ""
+    @State private var viewModel = HomeViewModel()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        @Bindable var viewModel = viewModel
+
         NavigationStack {
             List {
-                if let errorMessage {
-                    Text(errorMessage).foregroundStyle(.red)
+                if let errorMessage = viewModel.errorMessage, !viewModel.isOfflineBannerVisible {
+                    Text(errorMessage)
+                        .foregroundStyle(.red)
                 }
-                if sessions.isEmpty && errorMessage == nil {
+
+                if viewModel.sessions.isEmpty && viewModel.errorMessage == nil && !viewModel.isRefreshing {
                     ContentUnavailableView(
                         "No schedules yet",
                         systemImage: "calendar.badge.plus",
@@ -24,27 +23,13 @@ struct HomeView: View {
                     )
                     .listRowSeparator(.hidden)
                 }
-                ForEach(sessions) { session in
-                    NavigationLink(value: session.id) {
-                        VStack(alignment: .leading) {
-                            Text(session.title).font(.body)
-                            Text(session.status.replacingOccurrences(of: "_", with: " "))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .swipeActions(edge: .trailing) {
-                        Button(role: .destructive) { deleteSession(session) } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                        Button {
-                            renameText = session.title
-                            renamingSession = session
-                        } label: {
-                            Label("Edit", systemImage: "pencil")
-                        }
-                        .tint(.orange)
-                    }
+
+                ForEach(viewModel.sessions) { session in
+                    SessionRowView(
+                        session: session,
+                        onRename: { viewModel.prepareRename(session) },
+                        onDelete: { viewModel.deleteSession(session) }
+                    )
                 }
             }
             .navigationDestination(for: String.self) { sessionId in
@@ -56,80 +41,72 @@ struct HomeView: View {
                     UserButton()
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    if me?.isAdmin == true {
-                        NavigationLink("Admin") { AdminView() }
+                    if viewModel.me?.isAdmin == true {
+                        NavigationLink("Admin") {
+                            AdminView()
+                        }
                     }
-                    Button {
-                        showingSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
+                    Button("Settings", systemImage: "gearshape") {
+                        viewModel.showingSettings = true
                     }
-                    Button {
-                        showingNewSession = true
-                    } label: {
-                        Image(systemName: "plus")
+                    Button("New schedule", systemImage: "plus") {
+                        viewModel.showingNewSession = true
                     }
                 }
             }
-            .sheet(isPresented: $showingNewSession, onDismiss: reload) {
-                NavigationStack { NewSessionView() }
+            .safeAreaInset(edge: .top) {
+                if viewModel.isOfflineBannerVisible {
+                    OfflineBannerView(
+                        message: "Internet is not reachable",
+                        secondaryText: "Showing cached schedule data",
+                        onRetry: {
+                            Task { await viewModel.refresh() }
+                        },
+                        onDismiss: {
+                            withAnimation(.snappy) {
+                                viewModel.isOfflineBannerVisible = false
+                            }
+                        }
+                    )
+                    .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
+                }
             }
-            .sheet(isPresented: $showingSettings) {
+            .sheet(isPresented: $viewModel.showingNewSession, onDismiss: handleNewSessionDismiss) {
+                NavigationStack {
+                    NewSessionView()
+                }
+            }
+            .sheet(isPresented: $viewModel.showingSettings) {
                 SettingsView()
             }
-            .alert("Rename schedule", isPresented: renamingSessionBinding, actions: {
-                TextField("Title", text: $renameText)
-                Button("Cancel", role: .cancel) { renamingSession = nil }
-                Button("Save") { renameSession() }
-            })
-            .task { await reloadAsync() }
-            .refreshable { await reloadAsync() }
-        }
-    }
-
-    private var renamingSessionBinding: Binding<Bool> {
-        Binding(get: { renamingSession != nil }, set: { if !$0 { renamingSession = nil } })
-    }
-
-    private func reload() {
-        Task { await reloadAsync() }
-    }
-
-    private func reloadAsync() async {
-        do {
-            async let meResult = APIClient.me()
-            async let sessionsResult = APIClient.listSessions()
-            me = try await meResult
-            sessions = try await sessionsResult
-            errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    private func renameSession() {
-        guard let session = renamingSession else { return }
-        let title = renameText.trimmingCharacters(in: .whitespaces)
-        renamingSession = nil
-        guard !title.isEmpty else { return }
-        Task {
-            do {
-                _ = try await APIClient.renameSession(id: session.id, title: title)
-                await reloadAsync()
-            } catch {
-                errorMessage = error.localizedDescription
+            .alert("Rename schedule", isPresented: $viewModel.isRenamingPresented) {
+                TextField("Title", text: $viewModel.renameText)
+                Button("Cancel", role: .cancel) {
+                    viewModel.cancelRename()
+                }
+                Button("Save") {
+                    viewModel.saveRename()
+                }
+            }
+            .task {
+                await viewModel.refresh()
+            }
+            .refreshable {
+                await viewModel.refresh()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .networkDidBecomeReachable)) { _ in
+                if viewModel.isOfflineBannerVisible {
+                    Task {
+                        await viewModel.refresh()
+                    }
+                }
             }
         }
     }
 
-    private func deleteSession(_ session: SessionSummary) {
+    private func handleNewSessionDismiss() {
         Task {
-            do {
-                try await APIClient.deleteSession(id: session.id)
-                sessions.removeAll { $0.id == session.id }
-            } catch {
-                errorMessage = error.localizedDescription
-            }
+            await viewModel.refresh()
         }
     }
 }

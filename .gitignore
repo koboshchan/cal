@@ -7,6 +7,7 @@ ios/**/*.xcuserstate
 ios/**/DerivedData/
 ios/**/.build/
 ios/**/*.ipa
+ios/**/*.ipa.zip
 ios/**/*.dSYM
 ios/**/*.dSYM.zip
 

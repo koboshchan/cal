@@ -2,9 +2,9 @@ import { APICallError, generateText, stepCountIs, type ModelMessage } from "ai";
 import { getChatModel } from "./provider";
 import { SYSTEM_PROMPT } from "./systemPrompt";
 import { buildTools, type AgentToolState } from "./tools";
-import { generateIcs } from "../ics";
+import { generateIcs, parseAlarmTriggerSeconds } from "../ics";
 import { formatInZone } from "../timezone";
-import type { AgentSessionDoc } from "../types";
+import type { AgentSessionDoc, NormalizedEvent } from "../types";
 
 const MAX_STEPS = 25;
 
@@ -21,6 +21,20 @@ function buildInitialUserMessage(session: AgentSessionDoc): ModelMessage {
     lines.push("They have no existing calendar events.");
   }
   lines.push(`Current date/time where the user is (${session.timezone}): ${formatInZone(new Date(), session.timezone)}`);
+
+  const promptLower = session.userPrompt.toLowerCase();
+  const specifiesNotifications =
+    promptLower.includes("notif") ||
+    promptLower.includes("remind") ||
+    promptLower.includes("alarm") ||
+    promptLower.includes("alert");
+
+  if (!specifiesNotifications) {
+    lines.push(
+      `NOTE: The user did NOT specify how they want to be notified. You must ask them using askChoice: "How would you like to be notified for these events?" with options ["1 day before", "1 hour before", "5 minutes before"].`,
+    );
+  }
+
   return { role: "user", content: lines.join("\n\n") };
 }
 
@@ -138,8 +152,9 @@ export async function stepSession(session: AgentSessionDoc): Promise<void> {
     }
 
     if (finalizeCall && session.latestPatchedEvents) {
-      session.resultEvents = session.latestPatchedEvents;
-      session.resultIcs = generateIcs(session.latestPatchedEvents);
+      const finalEvents = applyNotificationAlarms(session.latestPatchedEvents, session.userAnswers);
+      session.resultEvents = finalEvents;
+      session.resultIcs = generateIcs(finalEvents);
       session.status = "done";
       session.currentStage = "Done";
     } else if (finalizeCall) {
@@ -213,4 +228,26 @@ function describeError(err: unknown): string {
     return `${err.message} (${err.statusCode} from ${err.url})${body ? `: ${body}` : ""}`;
   }
   return err instanceof Error ? err.message : String(err);
+}
+
+function applyNotificationAlarms(
+  events: NormalizedEvent[],
+  userAnswers: { question: string; answer: string }[],
+): NormalizedEvent[] {
+  const notifAnswer = userAnswers.find(
+    (a) =>
+      a.question.toLowerCase().includes("notif") ||
+      a.question.toLowerCase().includes("remind") ||
+      a.question.toLowerCase().includes("alarm") ||
+      a.question.toLowerCase().includes("alert"),
+  );
+  if (!notifAnswer) return events;
+
+  const seconds = parseAlarmTriggerSeconds(notifAnswer.answer);
+  if (seconds === null || seconds <= 0) return events;
+
+  return events.map((event) => {
+    if (event.alarms && event.alarms.length > 0) return event;
+    return { ...event, alarms: [seconds] };
+  });
 }
