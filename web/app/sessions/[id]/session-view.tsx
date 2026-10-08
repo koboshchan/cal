@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import QuestionForm from "@/app/session-question-form";
+import { formatEventTime } from "@/app/format-event";
 import { formatRRule } from "@/app/format-rrule";
 import type { SessionData } from "@/app/session-types";
 
@@ -57,11 +58,12 @@ export default function SessionView({ id }: { id: string }) {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-12">
       <div>
-        <h1 className="text-2xl font-semibold">{session.title}</h1>
+        <SessionTitle key={session.id} session={session} onRenamed={(updated) => setSession((current) => current ? { ...current, title: updated.title } : current)} />
         {session.description && <p className="mt-1 text-gray-600">{session.description}</p>}
       </div>
       <p className="text-sm text-gray-500">
         Status: <span className="font-medium">{session.status.replace("_", " ")}</span>
+        {session.timezone && ` · ${session.timezone}`}
       </p>
 
       {session.status === "running" && (
@@ -102,7 +104,7 @@ export default function SessionView({ id }: { id: string }) {
                 <div>
                   <p className="font-medium">{ev.title}</p>
                   <p className="text-sm text-gray-500">
-                    {new Date(ev.start).toLocaleString()} — {new Date(ev.end).toLocaleString()}
+                    {formatEventTime(ev, session.timezone)}
                     {ev.rrule ? ` · repeats: ${formatRRule(ev.rrule)}` : ""}
                   </p>
                   {ev.location && <p className="text-sm text-gray-500">{ev.location}</p>}
@@ -213,5 +215,53 @@ function RefineForm({
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
+  );
+}
+
+function SessionTitle({ session, onRenamed }: { session: SessionData; onRenamed: (data: SessionData) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(session.title);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (saving || !title.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/sessions/" + session.id, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to rename calendar");
+      onRenamed(data);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!editing) return (
+    <div className="flex items-start justify-between gap-3">
+      <h1 className="min-w-0 break-words text-2xl font-semibold">{session.title}</h1>
+      <button className="shrink-0 rounded-lg border px-3 py-1 text-sm" onClick={() => { setTitle(session.title); setError(null); setEditing(true); }}>Rename</button>
+    </div>
+  );
+
+  return (
+    <form onSubmit={save} className="flex flex-col gap-2">
+      <label htmlFor="calendar-title" className="text-sm text-gray-600">Calendar name</label>
+      <input id="calendar-title" autoFocus maxLength={120} value={title} disabled={saving} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-lg border px-3 py-2" />
+      <div className="flex gap-2">
+        <button type="submit" disabled={saving || !title.trim()} className="rounded-lg bg-black px-3 py-2 text-sm text-white disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
+        <button type="button" disabled={saving} onClick={() => setEditing(false)} className="rounded-lg border px-3 py-2 text-sm">Cancel</button>
+      </div>
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+    </form>
   );
 }
