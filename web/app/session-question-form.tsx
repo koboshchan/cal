@@ -68,6 +68,7 @@ export default function QuestionForm({
         {question.options.map((opt) => (
           <button
             key={opt}
+            aria-pressed={answers[question.toolCallId] === opt}
             disabled={submitting}
             onClick={() => chooseAndAdvance(opt)}
             className="w-full rounded-lg border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-800 transition hover:border-gray-900 hover:bg-gray-50 disabled:opacity-50"
@@ -98,12 +99,12 @@ export default function QuestionForm({
         <button
           onClick={() => chooseAndAdvance(customText)}
           disabled={submitting || !customText.trim()}
-          className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="min-h-11 rounded-lg bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           {submitting ? "Sending…" : isLast ? "Submit" : "Next"}
         </button>
       </div>
-      {stepIndex > 0 && <button disabled={submitting} onClick={() => { setStepIndex(stepIndex - 1); setCustomText(answers[questions[stepIndex - 1].toolCallId] ?? ""); }} className="min-h-11 w-fit rounded-lg border px-3 text-sm">Previous question</button>}
+      {stepIndex > 0 && <button disabled={submitting} onClick={() => { setStepIndex(stepIndex - 1); const prev = questions[stepIndex - 1]; const a = answers[prev.toolCallId] ?? ""; setCustomText(prev.options.includes(a) ? "" : a); }} className="min-h-11 w-fit rounded-lg border px-3 text-sm">Previous question</button>}
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
     </div>
   );

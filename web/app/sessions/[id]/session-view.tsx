@@ -81,7 +81,7 @@ export default function SessionView({ id }: { id: string }) {
         {session.timezone && ` · ${session.timezone}`}
       </p>
 
-      {session.status === "running" && (
+      {session.status === "running" && !loadError && (
         <div role="status" className="flex items-center gap-3 rounded-xl border bg-white p-5">
           <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-gray-300 border-t-black" />
           <p className="text-gray-600">{session.currentStage ?? "Working on it…"}</p>
@@ -126,13 +126,13 @@ export default function SessionView({ id }: { id: string }) {
               </li>
             ))}
           </ul>
-          <a
+          {session.resultEvents.length > 0 && <><a
             href={`/api/sessions/${id}/ics`}
             className="w-fit rounded-lg bg-black px-4 py-2 font-medium text-white"
           >
             Download calendar (.ics)
           </a>
-          <p className="text-xs text-gray-500">Open the .ics file in your calendar app to import these events.</p>
+          <p className="text-xs text-gray-500">Open the .ics file in your calendar app to import these events.</p></>}
         </div>
       )}
       {(session.status === "done" || session.status === "error") && <RefineForm sessionId={id} onRefined={handleUpdate} />}
@@ -283,12 +283,12 @@ function SessionTitle({ session, onRenamed }: { session: SessionData; onRenamed:
   );
 
   return (
-    <form onSubmit={save} className="flex flex-col gap-2">
+    <form onSubmit={save} onKeyDown={(e) => { if (e.key === "Escape" && !saving) { setEditing(false); setError(null); } }} className="flex flex-col gap-2">
       <label htmlFor="calendar-title" className="text-sm text-gray-600">Calendar name</label>
       <input id="calendar-title" autoFocus maxLength={120} value={title} disabled={saving} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-lg border px-3 py-2" />
       <div className="flex gap-2">
-        <button type="submit" disabled={saving || !title.trim()} className="rounded-lg bg-black px-3 py-2 text-sm text-white disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
-        <button type="button" disabled={saving} onClick={() => setEditing(false)} className="rounded-lg border px-3 py-2 text-sm">Cancel</button>
+        <button type="submit" disabled={saving || !title.trim()} className="min-h-11 rounded-lg bg-black px-3 py-2 text-sm text-white disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
+        <button type="button" disabled={saving} onClick={() => { setEditing(false); setError(null); }} className="min-h-11 rounded-lg border px-3 py-2 text-sm">Cancel</button>
       </div>
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
     </form>

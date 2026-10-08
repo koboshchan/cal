@@ -13,6 +13,7 @@ export default function NewSessionForm() {
   const router = useRouter();
   const [textPrompt, setTextPrompt] = useState("");
   const [timezone, setTimezone] = useState("");
+  const [filesKey, setFilesKey] = useState(0);
   const [icsFile, setIcsFile] = useState<File | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -56,19 +57,21 @@ export default function NewSessionForm() {
             placeholder="Include dates, times, how often things repeat, and any reminders. A photo works too."
             rows={5} className="w-full resize-y rounded-xl border border-gray-300 bg-white px-4 py-3 text-base" />
           <div className="flex flex-wrap gap-2" aria-label="Example schedules">
-            {EXAMPLES.map((example) => <button key={example.label} type="button" onClick={() => setTextPrompt(example.prompt)} className="min-h-10 rounded-full border border-gray-200 px-3 text-sm text-gray-600 hover:border-gray-900 hover:text-gray-900">{example.label}</button>)}
+            {EXAMPLES.map((example) => <button key={example.label} type="button" onClick={() => { if (!textPrompt.trim() || window.confirm("Replace what you typed with this example?")) setTextPrompt(example.prompt); }} className="min-h-10 rounded-full border border-gray-200 px-3 text-sm text-gray-600 hover:border-gray-900 hover:text-gray-900">{example.label}</button>)}
           </div>
         </div>
         <details className="rounded-xl border border-gray-200 bg-gray-50/70 p-4">
           <summary className="cursor-pointer text-sm font-medium">Photos, calendar files & timezone{(imageFiles.length > 0 || icsFile) ? " · files attached" : ""}</summary>
           <div className="mt-4 flex min-w-0 flex-col gap-4">
             <label className="flex min-w-0 flex-col gap-2 text-sm text-gray-600">Schedule photos
-              <input type="file" accept="image/*" multiple onChange={(e) => setImageFiles(Array.from(e.target.files ?? []))} className="w-full min-w-0 text-sm" />
+              <input key={filesKey} type="file" accept="image/*" multiple onChange={(e) => setImageFiles(Array.from(e.target.files ?? []))} className="w-full min-w-0 text-sm" />
               {imageFiles.length > 0 && <span role="status">{imageFiles.length} photo{imageFiles.length === 1 ? "" : "s"} attached</span>}
             </label>
             <label className="flex min-w-0 flex-col gap-2 text-sm text-gray-600">Existing .ics calendar
-              <input type="file" accept=".ics,text/calendar" onChange={(e) => setIcsFile(e.target.files?.[0] ?? null)} className="w-full min-w-0 text-sm" />
+              <input key={filesKey} type="file" accept=".ics,text/calendar" onChange={(e) => setIcsFile(e.target.files?.[0] ?? null)} className="w-full min-w-0 text-sm" />
+              {icsFile && <span role="status" className="break-all">{icsFile.name} attached</span>}
             </label>
+            {(icsFile || imageFiles.length > 0) && <button type="button" onClick={() => { setIcsFile(null); setImageFiles([]); setFilesKey((key) => key + 1); }} className="min-h-11 w-fit rounded-lg border px-3 text-sm">Clear attachments</button>}
             <label className="flex flex-col gap-2 text-sm text-gray-600">Schedule timezone
               <input value={timezone} onChange={(e) => setTimezone(e.target.value)} placeholder="Automatic, or America/Vancouver" className="min-w-0 rounded-lg border bg-white px-3 py-2 text-base" />
               <span className="text-xs">Automatic uses your browser timezone. Override it when scheduling for another place.</span>
