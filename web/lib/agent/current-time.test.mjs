@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 import vm from "node:vm";
 import assert from "node:assert/strict";
@@ -12,7 +13,7 @@ const timezone = ts.transpileModule(
   fs.readFileSync(path.join(import.meta.dirname, "../timezone.ts"), "utf8"),
   { compilerOptions: { module: ts.ModuleKind.CommonJS } },
 ).outputText;
-const timezoneContext = { exports: {} };
+const timezoneContext = { exports: {}, require: createRequire(import.meta.url) };
 vm.runInNewContext(timezone, timezoneContext);
 
 function promptAt(instant, zone = "America/Vancouver") {

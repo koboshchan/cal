@@ -1,3 +1,5 @@
+import { Temporal } from "@js-temporal/polyfill";
+
 const HAS_OFFSET = /(Z|[+-]\d{2}:?\d{2})$/;
 
 /**
@@ -11,34 +13,13 @@ const HAS_OFFSET = /(Z|[+-]\d{2}:?\d{2})$/;
  * without anyone noticing until the wrong hour shows up.
  */
 export function zonedTimeToUtc(iso: string, timeZone: string): Date {
-  if (HAS_OFFSET.test(iso)) return new Date(iso);
-
-  const naiveAsUtc = new Date(`${iso}Z`);
-  if (Number.isNaN(naiveAsUtc.getTime())) return naiveAsUtc;
-
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(naiveAsUtc);
-
-  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
-  const wallClockInZoneAsUtc = Date.UTC(
-    get("year"),
-    get("month") - 1,
-    get("day"),
-    get("hour"),
-    get("minute"),
-    get("second"),
-  );
-
-  const offsetMs = wallClockInZoneAsUtc - naiveAsUtc.getTime();
-  return new Date(naiveAsUtc.getTime() - offsetMs);
+  const instant = HAS_OFFSET.test(iso)
+    ? Temporal.Instant.from(iso)
+    : Temporal.PlainDateTime.from(iso)
+        // RFC 5545: first occurrence of a repeated time, shift skipped times forward.
+        .toZonedDateTime(timeZone, { disambiguation: "compatible" })
+        .toInstant();
+  return new Date(instant.epochMilliseconds);
 }
 
 /** The inverse: formats a real instant as a naive "YYYY-MM-DDTHH:mm:ss" local to `timeZone`. */
