@@ -6,11 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test lib/*.test.mjs lib/agent/*.test.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.66",
     "@clerk/nextjs": "^7.9.2",
+    "@js-temporal/polyfill": "^0.5.1",
     "ai": "^7.0.99",
     "ical-generator": "^11.1.1",
     "isolated-vm": "^7.0.1",
