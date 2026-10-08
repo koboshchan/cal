@@ -4,6 +4,7 @@ export interface SessionData {
   id: string;
   status: SessionStatus;
   title: string;
+  timezone?: string;
   description: string;
   userPrompt: string;
   currentStage?: string;

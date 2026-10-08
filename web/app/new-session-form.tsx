@@ -2,96 +2,89 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import GenerationProgressModal from "./generation-progress-modal";
+
+const EXAMPLES = [
+  { label: "Weekly routine", prompt: "Gym every Monday, Wednesday and Friday at 7am for one hour, starting next week." },
+  { label: "School clubs", prompt: "Create an all-day calendar for school club meetings. Ask me which dates and rooms to include." },
+  { label: "One appointment", prompt: "Dentist next Tuesday at 2pm for one hour, with a reminder the day before." },
+];
 
 export default function NewSessionForm() {
   const router = useRouter();
   const [textPrompt, setTextPrompt] = useState("");
+  const [timezone, setTimezone] = useState("");
+  const [filesKey, setFilesKey] = useState(0);
   const [icsFile, setIcsFile] = useState<File | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submitting) return;
     setError(null);
-
-    if (!textPrompt.trim() && !icsFile) {
-      setError("Describe your schedule or upload an .ics file.");
+    if (!textPrompt.trim() && !icsFile && imageFiles.length === 0) {
+      setError("Describe your schedule, attach a photo, or upload an .ics file.");
       return;
     }
-
     setSubmitting(true);
     try {
       const form = new FormData();
       if (textPrompt.trim()) form.set("textPrompt", textPrompt.trim());
       if (icsFile) form.set("icsFile", icsFile);
       imageFiles.forEach((file) => form.append("imageFiles", file));
-      form.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
-
+      const zone = timezone.trim() || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      try { new Intl.DateTimeFormat(undefined, { timeZone: zone }); }
+      catch { throw new Error("Enter a valid timezone, such as America/Vancouver."); }
+      form.set("timezone", zone);
       const res = await fetch("/api/sessions", { method: "POST", body: form });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Something went wrong");
-      setActiveSessionId(data.id);
+      if (!res.ok) throw new Error(data.error || "Could not create your calendar. Your input is still here.");
+      // One page owns generation, questions and results. Reloading it resumes progress.
+      router.push("/sessions/" + data.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-    } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <>
-      <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <textarea
-          value={textPrompt}
-          onChange={(e) => setTextPrompt(e.target.value)}
-          placeholder="e.g. Gym every weekday at 7am for the next month, plus a dentist appointment next Tuesday at 2pm"
-          rows={4}
-          className="rounded-lg border px-3 py-2"
-        />
-
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <label className="flex flex-1 flex-col gap-1 text-sm text-gray-600">
-            Photos of a schedule (optional)
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => setImageFiles(Array.from(e.target.files ?? []))}
-              className="text-sm"
-            />
-          </label>
-          <label className="flex flex-1 flex-col gap-1 text-sm text-gray-600">
-            Existing calendar .ics (optional)
-            <input
-              type="file"
-              accept=".ics,text/calendar"
-              onChange={(e) => setIcsFile(e.target.files?.[0] ?? null)}
-              className="text-sm"
-            />
-          </label>
+    <form onSubmit={onSubmit} className="flex flex-col gap-5" aria-busy={submitting}>
+      <fieldset disabled={submitting} className="flex min-w-0 flex-col gap-5 disabled:opacity-60">
+        <div className="flex flex-col gap-2">
+          <label htmlFor="schedule-request" className="text-sm font-medium">What belongs on your calendar?</label>
+          <textarea id="schedule-request" value={textPrompt} onChange={(e) => setTextPrompt(e.target.value)}
+            placeholder="Include dates, times, how often things repeat, and any reminders. A photo works too."
+            rows={5} className="w-full resize-y rounded-xl border border-gray-300 bg-white px-4 py-3 text-base" />
+          <div className="flex flex-wrap gap-2" aria-label="Example schedules">
+            {EXAMPLES.map((example) => <button key={example.label} type="button" onClick={() => { if (!textPrompt.trim() || window.confirm("Replace what you typed with this example?")) setTextPrompt(example.prompt); }} className="min-h-10 rounded-full border border-gray-200 px-3 text-sm text-gray-600 hover:border-gray-900 hover:text-gray-900">{example.label}</button>)}
+          </div>
         </div>
-
-        {error && <p className="text-sm text-red-600">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-lg bg-black px-4 py-2 font-medium text-white disabled:opacity-50"
-        >
-          {submitting ? "Starting…" : "Generate calendar"}
-        </button>
-      </form>
-
-      {activeSessionId && (
-        <GenerationProgressModal
-          sessionId={activeSessionId}
-          onDone={() => router.push(`/sessions/${activeSessionId}`)}
-          onClose={() => setActiveSessionId(null)}
-        />
-      )}
-    </>
+        <details className="rounded-xl border border-gray-200 bg-gray-50/70 p-4">
+          <summary className="cursor-pointer text-sm font-medium">Photos, calendar files & timezone{(imageFiles.length > 0 || icsFile) ? " · files attached" : ""}</summary>
+          <div className="mt-4 flex min-w-0 flex-col gap-4">
+            <label className="flex min-w-0 flex-col gap-2 text-sm text-gray-600">Schedule photos
+              <input key={filesKey} type="file" accept="image/*" multiple onChange={(e) => setImageFiles(Array.from(e.target.files ?? []))} className="w-full min-w-0 text-sm" />
+              {imageFiles.length > 0 && <span role="status">{imageFiles.length} photo{imageFiles.length === 1 ? "" : "s"} attached</span>}
+            </label>
+            <label className="flex min-w-0 flex-col gap-2 text-sm text-gray-600">Existing .ics calendar
+              <input key={filesKey} type="file" accept=".ics,text/calendar" onChange={(e) => setIcsFile(e.target.files?.[0] ?? null)} className="w-full min-w-0 text-sm" />
+              {icsFile && <span role="status" className="break-all">{icsFile.name} attached</span>}
+            </label>
+            {(icsFile || imageFiles.length > 0) && <button type="button" onClick={() => { setIcsFile(null); setImageFiles([]); setFilesKey((key) => key + 1); }} className="min-h-11 w-fit rounded-lg border px-3 text-sm">Clear attachments</button>}
+            <label className="flex flex-col gap-2 text-sm text-gray-600">Schedule timezone
+              <input value={timezone} onChange={(e) => setTimezone(e.target.value)} placeholder="Automatic, or America/Vancouver" className="min-w-0 rounded-lg border bg-white px-3 py-2 text-base" />
+              <span className="text-xs">Automatic uses your browser timezone. Override it when scheduling for another place.</span>
+            </label>
+          </div>
+        </details>
+      </fieldset>
+      {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-gray-500">Review the events before downloading.</p>
+        <button type="submit" disabled={submitting} className="min-h-11 rounded-lg bg-black px-5 py-3 text-sm font-medium text-white disabled:opacity-60">{submitting ? "Creating your calendar…" : "Create calendar"}</button>
+      </div>
+      {submitting && <p role="status" className="text-sm text-gray-500">Preparing your calendar. You&apos;ll answer any questions on the next page.</p>}
+    </form>
   );
 }

@@ -24,7 +24,7 @@ export default function QuestionForm({
 
   function chooseAndAdvance(value: string) {
     const trimmed = value.trim();
-    if (!trimmed) return;
+    if (submitting || !trimmed) return;
     const updated = { ...answers, [question.toolCallId]: trimmed };
     setAnswers(updated);
     setCustomText("");
@@ -68,6 +68,7 @@ export default function QuestionForm({
         {question.options.map((opt) => (
           <button
             key={opt}
+            aria-pressed={answers[question.toolCallId] === opt}
             disabled={submitting}
             onClick={() => chooseAndAdvance(opt)}
             className="w-full rounded-lg border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-800 transition hover:border-gray-900 hover:bg-gray-50 disabled:opacity-50"
@@ -83,7 +84,7 @@ export default function QuestionForm({
         <div className="h-px flex-1 bg-gray-200" />
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <input
           value={customText}
           onChange={(e) => setCustomText(e.target.value)}
@@ -92,17 +93,19 @@ export default function QuestionForm({
           }}
           placeholder="Type your own answer"
           disabled={submitting}
-          className="flex-1 rounded-lg border px-3 py-2 text-sm"
+          aria-label="Your answer"
+          className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-base"
         />
         <button
           onClick={() => chooseAndAdvance(customText)}
           disabled={submitting || !customText.trim()}
-          className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="min-h-11 rounded-lg bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           {submitting ? "Sending…" : isLast ? "Submit" : "Next"}
         </button>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {stepIndex > 0 && <button disabled={submitting} onClick={() => { setStepIndex(stepIndex - 1); const prev = questions[stepIndex - 1]; const a = answers[prev.toolCallId] ?? ""; setCustomText(prev.options.includes(a) ? "" : a); }} className="min-h-11 w-fit rounded-lg border px-3 text-sm">Previous question</button>}
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
     </div>
   );
 }
