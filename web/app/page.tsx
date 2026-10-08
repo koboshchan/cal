@@ -34,30 +34,32 @@ export default async function Home() {
     .toArray();
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-10 px-6 py-12">
-      <section>
-        <h1 className="mb-4 text-2xl font-semibold">New schedule</h1>
+    <div className="mx-auto flex max-w-2xl flex-col gap-10 px-5 py-10 sm:px-6 sm:py-12">
+      <section className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-7">
+        <p className="mb-2 text-xs font-medium uppercase tracking-widest text-gray-500">From plans to dates</p>
+        <h1 className="mb-2 text-2xl font-semibold">Make room for your week.</h1>
+        <p className="mb-6 text-sm text-gray-500">Describe your plans. Answer any questions. Review and export.</p>
         <NewSessionForm />
       </section>
 
-      {sessions.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-medium text-gray-700">Past sessions</h2>
-          <ul className="flex flex-col divide-y rounded-lg border">
+      <section>
+        {sessions.length === 0 ? <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center"><h2 className="font-medium">Your calendars will live here</h2><p className="mt-2 text-sm text-gray-500">Create your first one above. Come back anytime to rename it, make changes, or download it again.</p></div> : <div>
+          <h2 className="mb-3 text-lg font-medium text-gray-700">Your calendars</h2>
+          <ul className="flex flex-col divide-y rounded-xl border bg-white">
             {sessions.map((s) => (
               <li key={s._id!.toString()}>
                 <Link
                   href={`/sessions/${s._id!.toString()}`}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-gray-50"
+                  className="flex min-h-14 items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50"
                 >
-                  <span>{s.title}</span>
-                  <span className="text-sm text-gray-500">{s.status}</span>
+                  <span className="min-w-0 break-words font-medium">{s.title}</span>
+                  <span className="shrink-0 text-xs text-gray-500">{({ done: "Ready", running: "Building", awaiting_input: "Needs answer", error: "Needs change" } as Record<string, string>)[s.status] ?? s.status}</span>
                 </Link>
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        </div>}
+      </section>
     </div>
   );
 }
