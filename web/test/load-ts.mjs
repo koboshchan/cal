@@ -9,7 +9,7 @@ export function loadTs(relativePath, mocks = {}) {
   const code = ts.transpileModule(fs.readFileSync(url, "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true },
   }).outputText;
-  const context = { exports: {}, require: (name) => name in mocks ? mocks[name] : require(name) };
+  const context = { exports: {}, Date, require: (name) => name in mocks ? mocks[name] : require(name) };
   vm.runInNewContext(code, context, { filename: url.pathname });
   return context.exports;
 }
