@@ -10,6 +10,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tok
     return new Response("Not found", { status: 404 });
   }
   return new Response(ics, {
-    headers: { "Content-Type": "text/calendar; charset=utf-8" },
+    headers: {
+      "Content-Type": "text/calendar; charset=utf-8",
+      "Cache-Control": "private, no-store",
+      "Referrer-Policy": "no-referrer",
+    },
   });
 }
