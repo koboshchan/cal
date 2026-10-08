@@ -7,9 +7,9 @@ export function loadTs(relativePath, mocks = {}, globals = {}) {
   const url = new URL(relativePath, import.meta.url);
   const require = createRequire(url);
   const code = ts.transpileModule(fs.readFileSync(url, "utf8"), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true },
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2017, esModuleInterop: true },
   }).outputText;
-  const context = { exports: {}, Date, ...globals, require: (name) => name in mocks ? mocks[name] : require(name) };
+  const context = { exports: {}, Date, Error, ...globals, require: (name) => name in mocks ? mocks[name] : require(name) };
   vm.runInNewContext(code, context, { filename: url.pathname });
   return context.exports;
 }
