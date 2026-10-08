@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import QuestionForm from "@/app/session-question-form";
 import { formatEventTime } from "@/app/format-event";
@@ -13,6 +14,7 @@ export default function SessionView({ id }: { id: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stoppedRef = useRef(false);
+  const inFlightRef = useRef(false);
 
   function handleUpdate(data: SessionData) {
     if (stoppedRef.current) return;
@@ -28,6 +30,8 @@ export default function SessionView({ id }: { id: string }) {
   }
 
   async function advance() {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     try {
       const res = await fetch(`/api/sessions/${id}/continue`, { method: "POST" });
       const data = await res.json();
@@ -39,6 +43,8 @@ export default function SessionView({ id }: { id: string }) {
       handleUpdate(data);
     } catch (err) {
       if (!stoppedRef.current) setLoadError(err instanceof Error ? err.message : String(err));
+    } finally {
+      inFlightRef.current = false;
     }
   }
 
@@ -52,22 +58,31 @@ export default function SessionView({ id }: { id: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  if (loadError) return <p className="p-8 text-red-600">{loadError}</p>;
-  if (!session) return <p className="p-8 text-gray-500">Loading…</p>;
+  if (!session) return (
+    <div className="mx-auto flex max-w-2xl flex-col gap-5 px-5 py-10">
+      <Link href="/" className="w-fit text-sm text-gray-500">Back to calendars</Link>
+      {loadError ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5">
+        <p className="font-medium">Could not open this calendar</p><p className="mt-2 text-sm text-red-700">{loadError}</p>
+        <button onClick={() => { setLoadError(null); advance(); }} className="mt-4 min-h-11 rounded-lg border px-4 text-sm">Try again</button>
+      </div> : <div role="status" className="rounded-xl border bg-white p-6"><p className="font-medium">Opening your calendar…</p><p className="mt-2 text-sm text-gray-500">Checking saved events and any unfinished work.</p></div>}
+    </div>
+  );
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-12">
+    <div className="mx-auto flex max-w-2xl flex-col gap-6 px-5 py-10 sm:px-6 sm:py-12">
+      <Link href="/" className="w-fit text-sm text-gray-500 hover:text-black">Back to calendars</Link>
+      {loadError && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4"><p className="text-sm text-red-700">{loadError}</p><button onClick={() => { setLoadError(null); advance(); }} className="mt-3 min-h-11 rounded-lg border px-4 text-sm">Try again</button></div>}
       <div>
         <SessionTitle key={session.id} session={session} onRenamed={(updated) => setSession((current) => current ? { ...current, title: updated.title } : current)} />
         {session.description && <p className="mt-1 text-gray-600">{session.description}</p>}
       </div>
       <p className="text-sm text-gray-500">
-        Status: <span className="font-medium">{session.status.replace("_", " ")}</span>
+        Status: <span className="font-medium">{({ running: "Building your calendar", awaiting_input: "Needs your answer", done: "Ready to review", error: "Needs a change" })[session.status]}</span>
         {session.timezone && ` · ${session.timezone}`}
       </p>
 
       {session.status === "running" && (
-        <div className="flex items-center gap-3">
+        <div role="status" className="flex items-center gap-3 rounded-xl border bg-white p-5">
           <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-gray-300 border-t-black" />
           <p className="text-gray-600">{session.currentStage ?? "Working on it…"}</p>
         </div>
@@ -85,23 +100,21 @@ export default function SessionView({ id }: { id: string }) {
       )}
 
       {session.status === "awaiting_input" && session.pendingQuestions && (
-        <QuestionForm sessionId={id} questions={session.pendingQuestions} onAnswered={handleUpdate} />
+        <QuestionForm key={JSON.stringify(session.pendingQuestions)} sessionId={id} questions={session.pendingQuestions} onAnswered={handleUpdate} />
       )}
 
       {session.status === "error" && (
-        <p className="rounded-lg bg-red-50 p-4 text-red-700">{session.error}</p>
-      )}
-
-      {(session.status === "done" || session.status === "error") && (
-        <RefineForm sessionId={id} onRefined={handleUpdate} />
+        <p role="alert" className="rounded-lg bg-red-50 p-4 text-red-700">{session.error}</p>
       )}
 
       {session.status === "done" && session.resultEvents && (
         <div className="flex flex-col gap-4">
-          <ul className="flex flex-col divide-y rounded-lg border">
+          <h2 className="text-lg font-semibold">{session.resultEvents.length} event{session.resultEvents.length === 1 ? "" : "s"}</h2>
+          {session.resultEvents.length === 0 && <div className="rounded-xl border border-dashed p-6 text-center"><p className="font-medium">No events yet</p><p className="mt-2 text-sm text-gray-500">Ask for a change below to add dates or appointments.</p></div>}
+          <ul className="flex flex-col divide-y rounded-xl border bg-white empty:hidden">
             {session.resultEvents.map((ev, i) => (
               <li key={i} className="flex items-start justify-between gap-3 px-4 py-3">
-                <div>
+                <div className="min-w-0 break-words">
                   <p className="font-medium">{ev.title}</p>
                   <p className="text-sm text-gray-500">
                     {formatEventTime(ev, session.timezone)}
@@ -109,7 +122,7 @@ export default function SessionView({ id }: { id: string }) {
                   </p>
                   {ev.location && <p className="text-sm text-gray-500">{ev.location}</p>}
                 </div>
-                <DeleteEventButton sessionId={id} eventIndex={i} onDeleted={handleUpdate} />
+                <DeleteEventButton key={ev.title + ev.start + ev.end} title={ev.title} sessionId={id} eventIndex={i} onDeleted={handleUpdate} />
               </li>
             ))}
           </ul>
@@ -117,26 +130,33 @@ export default function SessionView({ id }: { id: string }) {
             href={`/api/sessions/${id}/ics`}
             className="w-fit rounded-lg bg-black px-4 py-2 font-medium text-white"
           >
-            Download .ics
+            Download calendar (.ics)
           </a>
+          <p className="text-xs text-gray-500">Open the .ics file in your calendar app to import these events.</p>
         </div>
       )}
+      {(session.status === "done" || session.status === "error") && <RefineForm sessionId={id} onRefined={handleUpdate} />}
     </div>
   );
 }
 
 function DeleteEventButton({
+  title,
   sessionId,
   eventIndex,
   onDeleted,
 }: {
   sessionId: string;
   eventIndex: number;
+  title: string;
   onDeleted: (updated: SessionData) => void;
 }) {
   const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function onClick() {
+    if (deleting || !window.confirm('Remove "' + title + '" from your calendar?')) return;
+    setError(null);
     setDeleting(true);
     try {
       const res = await fetch(`/api/sessions/${sessionId}/events/${eventIndex}`, {
@@ -145,20 +165,25 @@ function DeleteEventButton({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to delete event");
       onDeleted(data);
-    } catch {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
       setDeleting(false);
     }
   }
 
   return (
+    <div className="flex shrink-0 flex-col items-end gap-1">
     <button
       onClick={onClick}
       disabled={deleting}
-      aria-label="Remove event"
-      className="shrink-0 rounded-full px-2 py-1 text-sm text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+      aria-label={"Remove " + title}
+      className="min-h-11 min-w-11 rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
     >
-      ✕
+      {deleting ? "…" : "✕"}
     </button>
+    {error && <p role="alert" className="max-w-32 text-xs text-red-600">{error}</p>}
+    </div>
   );
 }
 
@@ -175,7 +200,7 @@ function RefineForm({
 
   async function submit() {
     const trimmed = prompt.trim();
-    if (!trimmed) return;
+    if (submitting || !trimmed) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -196,13 +221,17 @@ function RefineForm({
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex gap-2">
+    <div className="flex flex-col gap-3 rounded-xl border bg-white p-5">
+      <label htmlFor="calendar-change" className="font-medium">Want to change anything?</label>
+      <p className="text-sm text-gray-500">Add an event, move a time, or describe what should be different.</p>
+      <div className="flex flex-col gap-2 sm:flex-row">
         <input
+          id="calendar-change"
+          disabled={submitting}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder={'Ask for a change — e.g. "move gym to 6am"'}
-          className="flex-1 rounded-lg border px-3 py-2"
+          className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-base"
           onKeyDown={(e) => e.key === "Enter" && submit()}
         />
         <button
@@ -210,10 +239,10 @@ function RefineForm({
           disabled={submitting || !prompt.trim()}
           className="rounded-lg border px-4 py-2 font-medium disabled:opacity-50"
         >
-          {submitting ? "Working…" : "Refine"}
+          {submitting ? "Updating…" : "Update calendar"}
         </button>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
     </div>
   );
 }
@@ -249,7 +278,7 @@ function SessionTitle({ session, onRenamed }: { session: SessionData; onRenamed:
   if (!editing) return (
     <div className="flex items-start justify-between gap-3">
       <h1 className="min-w-0 break-words text-2xl font-semibold">{session.title}</h1>
-      <button className="shrink-0 rounded-lg border px-3 py-1 text-sm" onClick={() => { setTitle(session.title); setError(null); setEditing(true); }}>Rename</button>
+      <button disabled={session.status === "running"} className="min-h-11 shrink-0 rounded-lg border px-3 py-1 text-sm disabled:opacity-50" onClick={() => { setTitle(session.title); setError(null); setEditing(true); }}>Rename</button>
     </div>
   );
 
