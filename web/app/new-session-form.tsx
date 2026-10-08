@@ -7,6 +7,7 @@ import GenerationProgressModal from "./generation-progress-modal";
 export default function NewSessionForm() {
   const router = useRouter();
   const [textPrompt, setTextPrompt] = useState("");
+  const [timezone, setTimezone] = useState("");
   const [icsFile, setIcsFile] = useState<File | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -28,7 +29,10 @@ export default function NewSessionForm() {
       if (textPrompt.trim()) form.set("textPrompt", textPrompt.trim());
       if (icsFile) form.set("icsFile", icsFile);
       imageFiles.forEach((file) => form.append("imageFiles", file));
-      form.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
+      const zone = timezone.trim() || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      try { new Intl.DateTimeFormat(undefined, { timeZone: zone }); }
+      catch { throw new Error("Enter a valid timezone, such as America/Vancouver."); }
+      form.set("timezone", zone);
 
       const res = await fetch("/api/sessions", { method: "POST", body: form });
       const data = await res.json();
@@ -51,6 +55,12 @@ export default function NewSessionForm() {
           rows={4}
           className="rounded-lg border px-3 py-2"
         />
+
+        <label className="flex flex-col gap-1 text-sm text-gray-600">
+          Schedule timezone (optional)
+          <input value={timezone} onChange={(e) => setTimezone(e.target.value)} placeholder="Automatic, or America/Vancouver" className="rounded-lg border px-3 py-2" />
+          <span className="text-xs">Leave blank to use your browser timezone. Set this if your browser is in a different zone.</span>
+        </label>
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <label className="flex flex-1 flex-col gap-1 text-sm text-gray-600">

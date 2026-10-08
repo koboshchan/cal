@@ -25,6 +25,7 @@ export function serializeSessionDetail(session: AgentSessionDoc & { _id: ObjectI
     id: session._id.toString(),
     status: session.status,
     title: session.title,
+    timezone: session.timezone,
     description: session.description,
     userPrompt: session.userPrompt,
     currentStage: session.currentStage,
