@@ -1,23 +1,24 @@
 import { MongoClient, type Db } from "mongodb";
 
-const uri = process.env.MONGODB_URI;
-if (!uri) throw new Error("MONGODB_URI is not set");
-
-// Next.js dev reloads this module on every route change; cache the client
-// on `globalThis` so we don't open a new connection per request.
+// Builds must not require runtime credentials or a running Mongo server.
 declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-let clientPromise: Promise<MongoClient>;
+let clientPromise: Promise<MongoClient> | undefined;
 
-if (process.env.NODE_ENV === "development") {
-  if (!global._mongoClientPromise) {
-    global._mongoClientPromise = new MongoClient(uri).connect();
+function connectClient(): Promise<MongoClient> {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) throw new Error("MONGODB_URI is not set");
+  if (!clientPromise) {
+    if (process.env.NODE_ENV === "development") {
+      global._mongoClientPromise ??= new MongoClient(uri).connect();
+      clientPromise = global._mongoClientPromise;
+    } else {
+      clientPromise = new MongoClient(uri).connect();
+    }
   }
-  clientPromise = global._mongoClientPromise;
-} else {
-  clientPromise = new MongoClient(uri).connect();
+  return clientPromise;
 }
 
 let indexesEnsured: Promise<void> | undefined;
@@ -31,11 +32,9 @@ async function ensureIndexes(db: Db): Promise<void> {
 }
 
 export async function getDb(): Promise<Db> {
-  const client = await clientPromise;
+  const client = await connectClient();
   const db = client.db();
   if (!indexesEnsured) indexesEnsured = ensureIndexes(db);
   await indexesEnsured;
   return db;
 }
-
-export default clientPromise;
