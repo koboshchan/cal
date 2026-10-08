@@ -20,7 +20,6 @@ function buildInitialUserMessage(session: AgentSessionDoc): ModelMessage {
   } else {
     lines.push("They have no existing calendar events.");
   }
-  lines.push(`Current date/time where the user is (${session.timezone}): ${formatInZone(new Date(), session.timezone)}`);
   return { role: "user", content: lines.join("\n\n") };
 }
 
@@ -119,7 +118,10 @@ export async function stepSession(session: AgentSessionDoc): Promise<void> {
 
     const result = await generateText({
       model,
-      system: SYSTEM_PROMPT,
+      // Refresh on every turn, including refinements and tool continuations.
+      // This authoritative clock supersedes timestamps in older session history.
+      system: SYSTEM_PROMPT +
+        `\n\nCurrent date/time where the user is (${session.timezone}): ${formatInZone(new Date(), session.timezone)}. Use this time instead of any older timestamp in the conversation.`,
       messages: stripNullFields(session.messages) as ModelMessage[],
       tools,
       stopWhen: stepCountIs(1),
