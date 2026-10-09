@@ -49,18 +49,18 @@ export default function NewSessionForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5" aria-busy={submitting}>
+    <form onSubmit={onSubmit} className="cal-form flex flex-col gap-5" aria-busy={submitting}>
       <fieldset disabled={submitting} className="flex min-w-0 flex-col gap-5 disabled:opacity-60">
         <div className="flex flex-col gap-2">
           <label htmlFor="schedule-request" className="text-sm font-medium">What belongs on your calendar?</label>
           <textarea id="schedule-request" value={textPrompt} onChange={(e) => setTextPrompt(e.target.value)}
             placeholder="Include dates, times, how often things repeat, and any reminders. A photo works too."
-            rows={5} className="w-full resize-y rounded-xl border border-gray-300 bg-white px-4 py-3 text-base" />
+            rows={5} className="cal-prompt w-full resize-y rounded-xl border border-gray-300 bg-white px-4 py-3 text-base" />
           <div className="flex flex-wrap gap-2" aria-label="Example schedules">
-            {EXAMPLES.map((example) => <button key={example.label} type="button" onClick={() => { if (!textPrompt.trim() || window.confirm("Replace what you typed with this example?")) setTextPrompt(example.prompt); }} className="min-h-10 rounded-full border border-gray-200 px-3 text-sm text-gray-600 hover:border-gray-900 hover:text-gray-900">{example.label}</button>)}
+            {EXAMPLES.map((example) => <button key={example.label} type="button" onClick={() => { if (!textPrompt.trim() || window.confirm("Replace what you typed with this example?")) setTextPrompt(example.prompt); }} className="cal-example min-h-10 rounded-full border border-gray-200 px-3 text-sm text-gray-600 hover:border-gray-900 hover:text-gray-900">{example.label}</button>)}
           </div>
         </div>
-        <details className="rounded-xl border border-gray-200 bg-gray-50/70 p-4">
+        <details className="cal-attachments rounded-xl border border-gray-200 bg-gray-50/70 p-4">
           <summary className="cursor-pointer text-sm font-medium">Photos, calendar files & timezone{(imageFiles.length > 0 || icsFile) ? " · files attached" : ""}</summary>
           <div className="mt-4 flex min-w-0 flex-col gap-4">
             <label className="flex min-w-0 flex-col gap-2 text-sm text-gray-600">Schedule photos
@@ -82,7 +82,7 @@ export default function NewSessionForm() {
       {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-gray-500">Review the events before downloading.</p>
-        <button type="submit" disabled={submitting} className="min-h-11 rounded-lg bg-black px-5 py-3 text-sm font-medium text-white disabled:opacity-60">{submitting ? "Creating your calendar…" : "Create calendar"}</button>
+        <button type="submit" disabled={submitting} className="cal-primary min-h-11 rounded-lg bg-black px-5 py-3 text-sm font-medium text-white disabled:opacity-60">{submitting ? "Creating your calendar…" : "Create calendar"}</button>
       </div>
       {submitting && <p role="status" className="text-sm text-gray-500">Preparing your calendar. You&apos;ll answer any questions on the next page.</p>}
     </form>

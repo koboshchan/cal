@@ -9,11 +9,12 @@ export default async function Nav() {
   const admin = userId ? await isAdmin(await requireUser()) : false;
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 border-b">
-      <Link href="/" className="font-semibold">
+    <header className="cal-toolbar">
+      <Link href="/" className="cal-brand">
+        <span className="cal-mark" aria-hidden="true"><span /><span /><span /><span /></span>
         cal
       </Link>
-      <nav className="flex items-center gap-4">
+      <nav className="cal-account flex items-center gap-4">
         {userId ? (
           <>
             {admin && (

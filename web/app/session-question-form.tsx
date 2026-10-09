@@ -56,7 +56,7 @@ export default function QuestionForm({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border p-5">
+    <div className="cal-question flex flex-col gap-4 rounded-xl border p-5">
       {questions.length > 1 && (
         <p className="text-xs font-medium tracking-wide text-gray-400">
           QUESTION {stepIndex + 1} OF {questions.length}
