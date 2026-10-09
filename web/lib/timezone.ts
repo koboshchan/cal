@@ -56,3 +56,13 @@ export function formatInZone(date: Date, timeZone: string): string {
   const get = (type: string) => parts.find((p) => p.type === type)?.value;
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}:${get("second")}`;
 }
+
+/** Reject invalid zones instead of silently turning a local recurrence into UTC. */
+export function isValidTimezone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}

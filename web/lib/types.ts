@@ -1,10 +1,13 @@
 import { z } from "zod";
+import { isValidTimezone } from "./timezone";
 
 export const NormalizedEventSchema = z.object({
   title: z.string(),
   start: z.string().describe("ISO 8601 datetime"),
   end: z.string().describe("ISO 8601 datetime"),
   allDay: z.boolean().optional(),
+  timezone: z.string().refine(isValidTimezone, "Must be a valid IANA timezone").optional()
+    .describe("IANA timezone for local wall-clock recurrence, defaults to session timezone"),
   location: z.string().optional(),
   description: z.string().optional(),
   rrule: z

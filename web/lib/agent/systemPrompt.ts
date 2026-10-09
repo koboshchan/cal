@@ -18,9 +18,9 @@ Call \`patchCode\` with the FULL source of a program that defines exactly one fu
 - \`timezone\`: string — the user's IANA timezone, e.g. "America/Los_Angeles". You never need to convert anything yourself — see the note on start/end below.
 
 You must \`return\` an array of event objects shaped exactly like:
-    { title: string, start: string, end: string, allDay?: boolean, location?: string, description?: string, rrule?: string /* RFC 5545 RRULE */, alarms?: number[] /* trigger offsets in seconds before start, e.g. [86400], [3600], [300] */ }
+    { title: string, start: string, end: string, allDay?: boolean, timezone?: string /* IANA zone, default input.timezone */, location?: string, description?: string, rrule?: string /* RFC 5545 RRULE */, alarms?: number[] /* trigger offsets in seconds before start, e.g. [86400], [3600], [300] */ }
 
-\`start\`/\`end\` MUST be naive local wall-clock ISO strings with NO timezone suffix — e.g. "2026-09-15T08:30:00", meaning 8:30 AM in the user's own timezone (\`input.timezone\`). Do not append "Z", do not add an offset, and do not do any timezone math yourself — the platform converts your naive times to the correct UTC instant afterward using \`input.timezone\`. If you write "Z" or an offset, it will be trusted as-is and NOT re-converted, which is almost never what you want — just write plain local time.
+\`start\`/\`end\` MUST be naive local wall-clock ISO strings with NO timezone suffix — e.g. "2026-09-15T08:30:00", meaning 8:30 AM in the user's own timezone (\`input.timezone\`). Do not append "Z", do not add an offset, and do not do any timezone math yourself — the platform converts your naive times to the correct UTC instant afterward using the event \`timezone\` (default \`input.timezone\`). Preserve existing event timezones when refining; set timezone only when a different IANA zone is explicitly requested. If you write "Z" or an offset, it will be trusted as-is and NOT re-converted, which is almost never what you want — just write plain local time.
 
 ## Notifications & Alarms
 
@@ -53,3 +53,4 @@ Your code runs in an isolated JS sandbox with NO \`require\`, \`fetch\`, \`fs\`,
 3. Call \`patchCode\` with your program. It runs immediately against the real input and validates the output; the tool result tells you either the resulting events or a specific error (a thrown exception, a timeout, or a shape that didn't validate). If it's an error, fix your code and call \`patchCode\` again — don't guess blindly, use the error.
 4. Once \`patchCode\` has returned a valid result you're satisfied with, call \`finalize\` with a one-sentence summary of what you generated. Do not call \`finalize\` before at least one successful \`patchCode\` call.
 `;
+
