@@ -10,11 +10,13 @@ export default async function Nav() {
 
   return (
     <header className="cal-toolbar">
+      <a href="#main-content" className="cal-skip-link">Skip to content</a>
+      <div className="cal-toolbar-inner">
       <Link href="/" className="cal-brand">
         <span className="cal-mark" aria-hidden="true"><span /><span /><span /><span /></span>
         cal
       </Link>
-      <nav className="cal-account flex items-center gap-4">
+      <nav aria-label="Account" className="cal-account flex items-center gap-4">
         {userId ? (
           <>
             {admin && (
@@ -31,6 +33,7 @@ export default async function Nav() {
           </>
         )}
       </nav>
+      </div>
     </header>
   );
 }
