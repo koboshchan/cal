@@ -59,7 +59,7 @@ export default function SessionView({ id }: { id: string }) {
   }, [id]);
 
   if (!session) return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-5 px-5 py-10">
+    <div className="cal-session mx-auto flex max-w-2xl flex-col gap-5 px-5 py-10">
       <Link href="/" className="w-fit text-sm text-gray-500">Back to calendars</Link>
       {loadError ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5">
         <p className="font-medium">Could not open this calendar</p><p className="mt-2 text-sm text-red-700">{loadError}</p>
@@ -69,14 +69,14 @@ export default function SessionView({ id }: { id: string }) {
   );
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 px-5 py-10 sm:px-6 sm:py-12">
+    <div className="cal-session mx-auto flex max-w-2xl flex-col gap-6 px-5 py-10 sm:px-6 sm:py-12">
       <Link href="/" className="w-fit text-sm text-gray-500 hover:text-black">Back to calendars</Link>
       {loadError && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4"><p className="text-sm text-red-700">{loadError}</p><button onClick={() => { setLoadError(null); advance(); }} className="mt-3 min-h-11 rounded-lg border px-4 text-sm">Try again</button></div>}
       <div>
         <SessionTitle key={session.id} session={session} onRenamed={(updated) => setSession((current) => current ? { ...current, title: updated.title } : current)} />
         {session.description && <p className="mt-1 text-gray-600">{session.description}</p>}
       </div>
-      <p className="text-sm text-gray-500">
+      <p className="cal-session-status text-sm text-gray-500">
         Status: <span className="font-medium">{({ running: "Building your calendar", awaiting_input: "Needs your answer", done: "Ready to review", error: "Needs a change" })[session.status]}</span>
         {session.timezone && ` · ${session.timezone}`}
       </p>
@@ -111,9 +111,9 @@ export default function SessionView({ id }: { id: string }) {
         <div className="flex flex-col gap-4">
           <h2 className="text-lg font-semibold">{session.resultEvents.length} event{session.resultEvents.length === 1 ? "" : "s"}</h2>
           {session.resultEvents.length === 0 && <div className="rounded-xl border border-dashed p-6 text-center"><p className="font-medium">No events yet</p><p className="mt-2 text-sm text-gray-500">Ask for a change below to add dates or appointments.</p></div>}
-          <ul className="flex flex-col divide-y rounded-xl border bg-white empty:hidden">
+          <ul className="cal-event-list flex flex-col divide-y rounded-xl border bg-white empty:hidden">
             {session.resultEvents.map((ev, i) => (
-              <li key={i} className="flex items-start justify-between gap-3 px-4 py-3">
+              <li key={i} className="cal-event flex items-start justify-between gap-3 px-4 py-3">
                 <div className="min-w-0 break-words">
                   <p className="font-medium">{ev.title}</p>
                   <p className="text-sm text-gray-500">
@@ -128,7 +128,7 @@ export default function SessionView({ id }: { id: string }) {
           </ul>
           {session.resultEvents.length > 0 && <><a
             href={`/api/sessions/${id}/ics`}
-            className="w-fit rounded-lg bg-black px-4 py-2 font-medium text-white"
+            className="cal-primary w-fit rounded-lg bg-black px-4 py-2 font-medium text-white"
           >
             Download calendar (.ics)
           </a>
@@ -221,7 +221,7 @@ function RefineForm({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border bg-white p-5">
+    <div className="cal-refine flex flex-col gap-3 rounded-xl border bg-white p-5">
       <label htmlFor="calendar-change" className="font-medium">Want to change anything?</label>
       <p className="text-sm text-gray-500">Add an event, move a time, or describe what should be different.</p>
       <div className="flex flex-col gap-2 sm:flex-row">
