@@ -141,7 +141,7 @@ export async function stepSession(session: AgentSessionDoc): Promise<void> {
 
     if (finalizeCall && session.latestPatchedEvents) {
       session.resultEvents = session.latestPatchedEvents;
-      session.resultIcs = generateIcs(session.latestPatchedEvents);
+      session.resultIcs = generateIcs(session.latestPatchedEvents, session.timezone);
       session.status = "done";
       session.currentStage = "Done";
     } else if (finalizeCall) {

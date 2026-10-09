@@ -50,7 +50,7 @@ export async function removeResultEvent(
   }
 
   const resultEvents = session.resultEvents.filter((_, i) => i !== eventIndex);
-  const resultIcs = generateIcs(resultEvents);
+  const resultIcs = generateIcs(resultEvents, session.timezone);
   session.resultEvents = resultEvents;
   session.resultIcs = resultIcs;
   session.updatedAt = new Date();
@@ -74,8 +74,9 @@ export async function updateResultEvent(
     throw new InvalidRequestError("Event index out of range");
   }
 
-  const resultEvents = session.resultEvents.map((e, i) => (i === eventIndex ? event : e));
-  const resultIcs = generateIcs(resultEvents);
+  const updatedEvent = { ...event, timezone: event.timezone ?? session.resultEvents[eventIndex].timezone ?? session.timezone };
+  const resultEvents = session.resultEvents.map((e, i) => (i === eventIndex ? updatedEvent : e));
+  const resultIcs = generateIcs(resultEvents, session.timezone);
   session.resultEvents = resultEvents;
   session.resultIcs = resultIcs;
   session.updatedAt = new Date();
