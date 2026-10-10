@@ -22,3 +22,9 @@ test("timed display uses the schedule timezone instead of browser/server timezon
   const expected = new Date(event.start).toLocaleString(undefined, { timeZone: zone }) + " – " + new Date(event.end).toLocaleString(undefined, { timeZone: zone });
   assert.equal(formatEventTime(event, zone), expected);
 });
+test("timed display prefers the event timezone over the session timezone", () => {
+  const event = { title: "Film Club", start: "2026-10-15T22:15:00Z", end: "2026-10-16T00:30:00Z", timezone: "America/Vancouver" };
+  const expected = new Date(event.start).toLocaleString(undefined, { timeZone: "America/Vancouver" }) + " – " + new Date(event.end).toLocaleString(undefined, { timeZone: "America/Vancouver" });
+  assert.equal(formatEventTime(event, "America/New_York"), expected);
+  assert.notEqual(formatEventTime(event, "America/New_York"), formatEventTime({ ...event, timezone: undefined }, "America/New_York"));
+});

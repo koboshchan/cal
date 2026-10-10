@@ -2,28 +2,101 @@
 
 :root {
   color-scheme: light;
-  --background: #fafaf8;
-  --foreground: #171717;
+  --background: #f5f5f7;
+  --foreground: #1d1d1f;
+  --cal-accent: #c83338;
+  --cal-line: #dedee3;
+  --cal-muted: #63636b;
 }
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --font-mono: ui-monospace, monospace;
 }
+body { background: var(--background); color: var(--foreground); font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
+h1 { text-wrap: balance; letter-spacing: -.035em; line-height: 1.12; }
+h2 { text-wrap: balance; letter-spacing: -.025em; }
+:where(button, a, input, textarea, summary):focus-visible { outline: 3px solid #0071e3; outline-offset: 4px; }
+:where(button, summary) { touch-action: manipulation; }
+button:not(:disabled), summary, a { -webkit-tap-highlight-color: transparent; }
+button { transition: background-color 140ms ease, box-shadow 140ms ease, transform 140ms ease; }
+button:not(:disabled):active { transform: scale(.97); transition-duration: 60ms; }
+button:disabled { cursor: not-allowed; }
+input:not([type=file]), textarea { background: #fff; border-color: var(--cal-line); border-radius: .8rem; transition: border-color 140ms ease, box-shadow 140ms ease; }
+input:not([type=file]):focus, textarea:focus { border-color: #0071e3; box-shadow: 0 0 0 3px #0071e318; }
+input[type=file]::file-selector-button { border: 1px solid var(--cal-line); border-radius: .6rem; background: white; padding: .5rem .75rem; margin-right: .65rem; }
+.cal-toolbar { position: sticky; top: 0; z-index: 20; background: #f5f5f7db; backdrop-filter: blur(24px) saturate(160%); box-shadow: 0 1px 0 #1d1d1f0b; }
+.cal-toolbar-inner { display: flex; align-items: center; justify-content: space-between; max-width: 1120px; margin: auto; padding: 1rem 1.5rem; }
+.cal-skip-link { position: absolute; left: 1rem; top: .75rem; z-index: 30; padding: .75rem 1rem; border-radius: .75rem; background: white; color: var(--foreground); transform: translateY(-200%); }
+.cal-skip-link:focus { transform: none; }
+#main-content, :where(h1, h2, button, a, input, textarea, summary) { scroll-margin-top: 6rem; }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), sans-serif;
+.cal-brand { display: inline-flex; align-items: center; gap: .7rem; font-size: 1.5rem; font-weight: 650; letter-spacing: -.065em; }
+.cal-mark { display: grid; grid-template-columns: repeat(2, 5px); gap: 3px; width: 30px; height: 30px; align-content: center; justify-content: center; border-top: 7px solid var(--cal-accent); border-radius: 7px; background: white; box-shadow: 0 1px 5px #00000012; }
+.cal-mark span { width: 5px; height: 4px; background: #9999a2; border-radius: 1px; }
+.cal-account { font-size: .875rem; color: var(--cal-muted); }
+.cal-account > button { min-height: 36px; padding: .35rem .8rem; border-radius: 999px; background: white; }
+.cal-workspace { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(240px, 1fr); align-items: start; gap: 2rem; max-width: 1120px; margin: auto; padding: 3rem 1.5rem; }
+.cal-composer, .cal-library { background: white; padding: 2rem; border-radius: 1.75rem; box-shadow: 0 8px 40px #1d1d1f06, 0 1px 3px #1d1d1f08; }
+.cal-composer > p:first-child, .cal-eyebrow { color: var(--cal-accent); font-size: .7rem; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; }
+.cal-composer > h1 { font-size: clamp(1.8rem, 3vw, 2.5rem); margin-bottom: .8rem; }
+.cal-composer > p:nth-of-type(2) { line-height: 1.6; color: var(--cal-muted); margin-bottom: 1.5rem; max-width: 27rem; }
+.cal-prompt { resize: none; min-height: 10rem; background: #fafafa; line-height: 1.6; }
+.cal-prompt::placeholder { color: #76767d; }
+.cal-example { min-height: 36px; font-size: .75rem; border-color: transparent; background: #f1f1f4; color: #55555d; }
+.cal-example:hover { background: #e8e8ed; border-color: transparent; }
+.cal-attachments { background: #f8f8fa; border: 0; border-radius: 1rem; }
+.cal-attachments summary { display: flex; align-items: center; gap: .5rem; min-height: 24px; list-style: none; color: #55555d; }
+.cal-attachments summary::-webkit-details-marker { display: none; }
+.cal-disclosure-icon { display: inline-flex; flex-shrink: 0; transition: transform 140ms ease; }
+.cal-attachments[open] .cal-disclosure-icon { transform: rotate(90deg); }
+.cal-form-footer { align-items: center; gap: 1rem; }
+.cal-form-footer p { line-height: 1.5; }
+
+.cal-primary, .bg-black { background: #c83338; border-color: transparent; color: white; border-radius: .75rem; box-shadow: 0 2px 4px #c8333815; }
+.cal-primary:hover, button.bg-black:hover { background: #af292e; }
+
+.cal-library h2 { font-size: 1.15rem; font-weight: 650; margin-bottom: 1.25rem; color: #1d1d1f; }
+.cal-library ul { background: transparent; border: 0; border-radius: 0; }
+.cal-library li { border-color: var(--cal-line); }
+.cal-library li a { position: relative; align-items: start; flex-direction: column; gap: .6rem; padding: 1rem 2rem 1rem .2rem; border-radius: .65rem; transition: background-color 140ms ease; }
+.cal-library li a:hover { background: #f5f5f7; }
+.cal-library li a::after { content: '›'; position: absolute; right: .6rem; top: 1.2rem; color: #9999a0; font-size: 1.3rem; }
+.cal-calendar-title { font-size: 1rem; }
+.cal-status { background: #e8e8ed; border-radius: 999px; padding: .2rem .6rem; color: #595961; font-size: .7rem; }
+.cal-session { max-width: 800px; padding-top: 3.5rem; padding-bottom: 5rem; gap: 1.5rem; }
+.cal-session h1 { font-size: clamp(1.75rem, 4vw, 2.4rem); }
+.cal-session-status { background: #eaeaec; width: fit-content; border-radius: 999px; padding: .5rem .85rem; line-height: 1.6; }
+.cal-event-list { border: 0; border-radius: 1.25rem; overflow: hidden; box-shadow: 0 2px 12px #00000004; }
+.cal-event { padding: 1.3rem 1.5rem; border-color: #eeeeF1; }
+.cal-event > div:first-child { border-left: 3px solid var(--cal-accent); padding-left: 1rem; }
+.cal-event p { line-height: 1.7; }
+.cal-refine, .cal-question { border: 0; border-radius: 1.25rem; background: white; padding: 1.5rem; }
+.cal-question button:not(.bg-black) { border-color: var(--cal-line); background: #fafafa; }
+.cal-sheet { border-radius: 1.5rem; box-shadow: 0 24px 80px #00000030; }
+.cal-welcome { min-height: 75vh; }
+.cal-welcome h1 { max-width: 45rem; font-size: clamp(2.5rem, 6vw, 4.5rem); }
+.cal-welcome > p { line-height: 1.7; margin-top: 1rem; }
+.text-gray-500, .text-gray-400 { color: var(--cal-muted); }
+@media (max-width: 760px) {
+ .cal-workspace { grid-template-columns: minmax(0, 1fr); padding: 1.75rem 1rem 3rem; gap: 2rem; }
+ .cal-toolbar-inner { padding: .85rem 1rem; }
+ .cal-composer, .cal-library { padding: 1.5rem; border-radius: 1.4rem; }
+ .cal-form-footer { flex-direction: column; align-items: stretch; gap: .75rem; }
+ .cal-library li a { flex-direction: row; align-items: center; flex-wrap: wrap; }
+ .cal-session { padding-top: 1.75rem; }
+ .cal-session-status { border-radius: .85rem; }
+ .cal-event { padding: 1rem; }
+ .cal-account { gap: .5rem; }
 }
-
-:where(button, a, input, textarea, summary):focus-visible {
-  outline: 2px solid #171717;
-  outline-offset: 3px;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+ *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+ button:not(:disabled):active { transform: none; }
+}
+@media (prefers-reduced-transparency: reduce) { .cal-toolbar { background: #f5f5f7; backdrop-filter: none; } }
+@media (prefers-contrast: more) {
+ :root { --cal-muted: #3b3b42; --cal-line: #777780; }
+ .cal-toolbar { background: #f5f5f7; border-bottom: 1px solid #777780; }
+ .cal-composer, .cal-library, .cal-event-list, .cal-question, .cal-refine { border: 1px solid #777780; }
 }
