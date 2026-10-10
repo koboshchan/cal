@@ -77,7 +77,7 @@ export default function SessionView({ id }: { id: string }) {
         {session.description && <p className="mt-1 text-gray-600">{session.description}</p>}
       </div>
       <p className="cal-session-status text-sm text-gray-500">
-        Status: <span className="font-medium">{({ running: "Building your calendar", awaiting_input: "Needs your answer", done: "Ready to review", error: "Needs a change" })[session.status]}</span>
+        Status: <span className="font-medium">{({ running: "Building your calendar", awaiting_input: "Needs your answer", done: "Ready to review", error: "Generation failed" })[session.status]}</span>
         {session.timezone && ` · ${session.timezone}`}
       </p>
 
@@ -104,7 +104,7 @@ export default function SessionView({ id }: { id: string }) {
       )}
 
       {session.status === "error" && (
-        <p role="alert" className="rounded-lg bg-red-50 p-4 text-red-700">{session.error}</p>
+        <ErrorBlock sessionId={id} message={session.error} onRetried={handleUpdate} />
       )}
 
       {session.status === "done" && session.resultEvents && (
@@ -292,5 +292,40 @@ function SessionTitle({ session, onRenamed }: { session: SessionData; onRenamed:
       </div>
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
     </form>
+  );
+}
+
+function ErrorBlock({ sessionId, message, onRetried }: { sessionId: string; message?: string | null; onRetried: (data: SessionData) => void }) {
+  const [retrying, setRetrying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function retry() {
+    if (retrying) return;
+    setRetrying(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/refine`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: "Retry the previous request without changing it." }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to retry");
+      onRetried(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setRetrying(false);
+    }
+  }
+
+  return (
+    <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5">
+      <p className="font-medium text-red-800">Generation failed</p>
+      {message && <p className="mt-1 text-sm text-red-700">{message}</p>}
+      <p className="mt-3 text-sm text-red-700">Your calendar request is saved. Try again, or change your request below. If it keeps failing, ask an administrator to check the AI provider.</p>
+      <button onClick={retry} disabled={retrying} className="mt-4 min-h-11 rounded-lg border bg-white px-4 text-sm font-medium disabled:opacity-50">{retrying ? "Retrying…" : "Try again"}</button>
+      {error && <p className="mt-3 text-sm text-red-800">{error}</p>}
+    </div>
   );
 }
