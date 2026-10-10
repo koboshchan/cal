@@ -9,6 +9,7 @@ export function formatEventTime(event: NormalizedEvent, timeZone?: string): stri
     const format = (date: Date) => date.toLocaleDateString(undefined, { timeZone: "UTC" });
     return format(start) + (last > start ? " – " + format(last) : "") + " · All day";
   }
-  const options = timeZone ? { timeZone } : undefined;
+  const zone = event.timezone || timeZone;
+  const options = zone ? { timeZone: zone } : undefined;
   return new Date(event.start).toLocaleString(undefined, options) + " – " + new Date(event.end).toLocaleString(undefined, options);
 }
