@@ -1,3 +1,4 @@
+import LegalFooter from "./components/legal/LegalFooter";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -25,10 +26,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head><meta charSet="utf-8" /></head>
       <body className="min-h-full flex flex-col">
         <ClerkProvider>
           <Nav />
           <main className="flex-1">{children}</main>
+          <LegalFooter />
         </ClerkProvider>
       </body>
     </html>
