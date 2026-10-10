@@ -107,14 +107,17 @@ export async function persistSession(session: AgentSessionDoc & { _id: ObjectId 
         userAnswers: rest.userAnswers,
         resultEvents: rest.resultEvents,
         resultIcs: rest.resultIcs,
-        error: rest.error,
+        ...(rest.error ? { error: rest.error } : {}),
         stepCount: rest.stepCount,
         currentStage: rest.currentStage,
         latestPatchedEvents: rest.latestPatchedEvents,
         updatedAt: rest.updatedAt,
         ...(pendingQuestions ? { pendingQuestions } : {}),
       },
-      ...(pendingQuestions ? {} : { $unset: { pendingQuestions: "" } }),
+      ...(!pendingQuestions || !rest.error ? { $unset: {
+        ...(!pendingQuestions ? { pendingQuestions: "" } : {}),
+        ...(!rest.error ? { error: "" } : {}),
+      } } : {}),
     },
   );
 }

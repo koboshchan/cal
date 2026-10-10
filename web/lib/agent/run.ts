@@ -27,6 +27,8 @@ function buildInitialUserMessage(session: AgentSessionDoc): ModelMessage {
 export function initializeSession(session: AgentSessionDoc): void {
   session.messages = [buildInitialUserMessage(session)];
   session.status = "running";
+  session.error = undefined;
+  session.pendingQuestions = undefined;
   session.stepCount = 0;
   session.currentStage = "Understanding your request…";
   session.latestPatchedEvents = null;
@@ -79,6 +81,8 @@ export function answerPendingQuestions(
 export function startRefinement(session: AgentSessionDoc, prompt: string): void {
   session.messages.push({ role: "user", content: `Follow-up request: ${prompt}` });
   session.status = "running";
+  session.error = undefined;
+  session.pendingQuestions = undefined;
   session.stepCount = 0;
   session.currentStage = "Understanding your request…";
   session.latestPatchedEvents = null;
