@@ -53,7 +53,7 @@ export default async function Home() {
                   className="flex min-h-14 items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50"
                 >
                   <span className="cal-calendar-title min-w-0 break-words font-medium">{s.title}</span>
-                  <span className="cal-status shrink-0 text-xs text-gray-500">{({ done: "Ready", running: "Building", awaiting_input: "Needs answer", error: "Needs change" } as Record<string, string>)[s.status] ?? s.status}</span>
+                  <span className="cal-status shrink-0 text-xs text-gray-500">{({ done: "Ready", running: "Building", awaiting_input: "Needs answer", error: "Generation failed" } as Record<string, string>)[s.status] ?? s.status}</span>
                 </Link>
               </li>
             ))}
