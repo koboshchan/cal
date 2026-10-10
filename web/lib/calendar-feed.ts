@@ -38,9 +38,11 @@ export async function generateFeedIcsForToken(token: string): Promise<string | n
   const sessions = await db
     .collection<AgentSessionDoc>("sessions")
     .find({ userId: user.clerkUserId, status: "done" })
-    .project<{ resultEvents: AgentSessionDoc["resultEvents"] }>({ resultEvents: 1 })
+    .project<Pick<AgentSessionDoc, "resultEvents" | "timezone">>({ resultEvents: 1, timezone: 1 })
     .toArray();
 
-  const events = sessions.flatMap((s) => s.resultEvents ?? []);
+  const events = sessions.flatMap((s) => (s.resultEvents ?? []).map((event) => ({
+    ...event, timezone: event.timezone ?? s.timezone,
+  })));
   return generateIcs(events);
 }

@@ -77,8 +77,9 @@ export async function runGenerateSchedule(
         ? event
         : {
             ...event,
-            start: zonedTimeToUtc(event.start, input.timezone).toISOString(),
-            end: zonedTimeToUtc(event.end, input.timezone).toISOString(),
+            timezone: event.timezone ?? input.timezone,
+            start: zonedTimeToUtc(event.start, event.timezone ?? input.timezone).toISOString(),
+            end: zonedTimeToUtc(event.end, event.timezone ?? input.timezone).toISOString(),
           },
     );
 
