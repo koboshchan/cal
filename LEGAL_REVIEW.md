@@ -8,7 +8,7 @@ Status: draft, not effective, not legal advice. Reviewed against main d9b6a18 (m
 - Creating a calendar (`web/app/api/sessions/route.ts`, `web/app/new-session-form.tsx`) sends prompt text, optional images, optional ICS files and a timezone to the backend. Images are described by the configured vision model and only the description is saved. ICS files are parsed into events.
 - Saved data lives in MongoDB: sessions, events, generated ICS, history, errors. A calendar can be deleted (`DELETE` on a session removes the record). There is no expiry job and no account-wide deletion tied to Clerk.
 - The secret feed (`/api/calendar/feed`, `/api/me/calendar-feed`) is readable without sign-in by anyone holding the token URL.
-- AI endpoint and model are set in admin settings; the code supports an OpenAI-compatible endpoint. The default shown in the iOS admin screen is api.openai.com, but that does not prove the live provider.
+- AI endpoint and model are set in admin settings; the code supports an OpenAI-compatible endpoint. Operator-supplied facts (Oct 15, not verified from code): paid OpenAI API, no Zero Data Retention; voice, transcription and TTS run locally on operator hardware and are never used for training. OpenAI's page (https://developers.openai.com/api/docs/guides/your-data, read Oct 15) says API data is not used for training by default and abuse monitoring logs are kept up to 30 days. Still open: hosting country, retention of non-provider logs and backups, effective date and operator identity.
 - No analytics, ads or payment code was found. The web app code does not use localStorage, sessionStorage or its own cookies; cookies come from Clerk.
 
 ## Timezone handling
