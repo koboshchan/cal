@@ -1,3 +1,4 @@
+import styles from "./components/legal/legal.module.css";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
@@ -9,6 +10,7 @@ export default async function Nav() {
   const admin = userId ? await isAdmin(await requireUser()) : false;
 
   return (
+    <>
     <header className="cal-toolbar">
       <a href="#main-content" className="cal-skip-link">Skip to content</a>
       <div className="cal-toolbar-inner">
@@ -35,5 +37,12 @@ export default async function Nav() {
       </nav>
       </div>
     </header>
+      {!userId && (
+        <p className={styles.signupNotice}>
+          Before signing up, read the <Link href="/terms">Terms</Link> and{" "}
+          <Link href="/privacy">Privacy Policy</Link>.
+        </p>
+      )}
+    </>
   );
 }
