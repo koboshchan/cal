@@ -28,8 +28,11 @@ struct QuestionWizardView: View {
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
+            ProgressView(value: Double(stepIndex), total: Double(max(questions.count, 1)))
+                .accessibilityLabel("Question \(stepIndex + 1) of \(questions.count)")
             Text(question.question)
-                .font(.body.weight(.semibold))
+                .font(.title3.bold())
+                .fixedSize(horizontal: false, vertical: true)
 
             VStack(spacing: 8) {
                 ForEach(question.options, id: \.self) { option in
@@ -41,8 +44,12 @@ struct QuestionWizardView: View {
                                 .font(.subheadline.weight(.medium))
                                 .foregroundStyle(.primary)
                                 .multilineTextAlignment(.leading)
-                            Spacer(minLength: 0)
+                            Spacer(minLength: 8)
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(.secondary)
+                                .accessibilityHidden(true)
                         }
+                        .frame(minHeight: 44)
                         .padding(.vertical, 12)
                         .padding(.horizontal, 14)
                         .background(Color(.secondarySystemBackground))

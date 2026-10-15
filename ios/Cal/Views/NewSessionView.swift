@@ -19,6 +19,15 @@ struct NewSessionView: View {
 
     var body: some View {
         Form {
+            Section {
+                Label("Your plans, in your words", systemImage: "text.bubble")
+                    .font(.title3.bold())
+                Text("Include the days, times, and anything you'd like Cal to remember. You'll review the details before you're done.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             Section("Describe your schedule") {
                 TextField(
                     "e.g. Gym every weekday at 7am for the next month",
@@ -29,7 +38,9 @@ struct NewSessionView: View {
             }
 
             Section("Optional attachments") {
-                PhotosPicker("Photos of a schedule", selection: $photoItems, matching: .images)
+                PhotosPicker(selection: $photoItems, matching: .images) {
+                    Label("Photos of a schedule", systemImage: "photo")
+                }
                 if !imageDatas.isEmpty {
                     Label(
                         "\(imageDatas.count) image\(imageDatas.count == 1 ? "" : "s") attached",
@@ -38,18 +49,32 @@ struct NewSessionView: View {
                     .foregroundStyle(.green)
                 }
 
-                Button("Existing calendar (.ics)") { showingFileImporter = true }
+                Button("Existing calendar (.ics)", systemImage: "calendar.badge.plus") { showingFileImporter = true }
                 if let icsFilename {
                     Label(icsFilename, systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.green)
                 }
             }
 
+            if submitting {
+                Section {
+                    HStack(spacing: 12) {
+                        ProgressView()
+                        Text("Turning your plans into a schedule…")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
             if let errorMessage {
-                Text(errorMessage).foregroundStyle(.red)
+                Section {
+                    Label(errorMessage, systemImage: "exclamationmark.circle")
+                        .foregroundStyle(.red)
+                }
             }
         }
         .navigationTitle("New schedule")
+        .navigationBarTitleDisplayMode(.inline)
+        .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") { dismiss() }

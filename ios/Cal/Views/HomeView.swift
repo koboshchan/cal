@@ -11,19 +11,35 @@ struct HomeView: View {
         NavigationStack {
             List {
                 if let errorMessage = viewModel.errorMessage, !viewModel.isOfflineBannerVisible {
-                    Text(errorMessage)
-                        .foregroundStyle(.red)
+                    Section {
+                        Label(errorMessage, systemImage: "exclamationmark.circle")
+                            .foregroundStyle(.red)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button("Try again") { Task { await viewModel.refresh() } }
+                    }
                 }
 
                 if viewModel.sessions.isEmpty && viewModel.errorMessage == nil && !viewModel.isRefreshing {
                     ContentUnavailableView(
                         "No schedules yet",
                         systemImage: "calendar.badge.plus",
-                        description: Text("Add a schedule by pressing the + button above")
+                        description: Text("Turn a few words, a photo, or an existing calendar into your next plan.")
                     )
+                    .listRowSeparator(.hidden)
+                    Button("Create a schedule", systemImage: "plus") {
+                        viewModel.showingNewSession = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .frame(maxWidth: .infinity)
                     .listRowSeparator(.hidden)
                 }
 
+                if viewModel.isRefreshing && viewModel.sessions.isEmpty {
+                    HStack { ProgressView(); Text("Loading your schedules…").foregroundStyle(.secondary) }
+                        .frame(maxWidth: .infinity)
+                }
+                Section {
                 ForEach(viewModel.sessions) { session in
                     SessionRowView(
                         session: session,
@@ -31,7 +47,13 @@ struct HomeView: View {
                         onDelete: { viewModel.deleteSession(session) }
                     )
                 }
+                } header: {
+                    if !viewModel.sessions.isEmpty {
+                        Text("Your schedules")
+                    }
+                }
             }
+            .listStyle(.insetGrouped)
             .navigationDestination(for: String.self) { sessionId in
                 SessionDetailView(sessionId: sessionId)
             }

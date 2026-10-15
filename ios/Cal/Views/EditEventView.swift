@@ -29,7 +29,7 @@ struct EditEventView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section {
+                Section("Event") {
                     TextField("Title", text: $title)
                     Toggle("All day", isOn: $allDay)
                     DatePicker(
@@ -43,17 +43,24 @@ struct EditEventView: View {
                         displayedComponents: allDay ? [.date] : [.date, .hourAndMinute]
                     )
                 }
-                Section {
+                Section("Details") {
                     TextField("Location (optional)", text: $location)
-                    TextField("Notes (optional)", text: $notes)
+                    TextField("Notes (optional)", text: $notes, axis: .vertical)
                 }
                 Section("Repeats (advanced)") {
-                    TextField("RRULE, e.g. FREQ=WEEKLY;BYDAY=MO,WE,FR", text: $rrule)
+                    if let recurrence = original.formattedRRule {
+                        Label(recurrence, systemImage: "repeat")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    TextField("RRULE, e.g. FREQ=WEEKLY;BYDAY=MO,WE,FR", text: $rrule, axis: .vertical)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                 }
             }
             .navigationTitle("Edit event")
+            .navigationBarTitleDisplayMode(.inline)
+            .scrollDismissesKeyboard(.interactively)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

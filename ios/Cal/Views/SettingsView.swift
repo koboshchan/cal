@@ -11,6 +11,8 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section {
+                    Label("Everything in one calendar", systemImage: "calendar.badge.checkmark")
+                        .font(.title3.bold())
                     Text(
                         "Subscribing adds a live calendar to Apple Calendar that stays in sync — " +
                         "every finished schedule you generate shows up automatically, no re-importing needed."
@@ -19,14 +21,19 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Button(loading ? "Opening…" : "Add to Calendar") { subscribe() }
+                    Button(loading ? "Opening…" : "Add to Calendar", systemImage: "calendar.badge.plus") { subscribe() }
+                        .font(.headline)
+                        .frame(minHeight: 44)
                         .disabled(loading)
                     if let errorMessage {
                         Text(errorMessage).foregroundStyle(.red)
                     }
+                } footer: {
+                    Text("Apple Calendar will ask you to confirm the subscription. Your finished schedules stay up to date automatically.")
                 }
             }
             .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }

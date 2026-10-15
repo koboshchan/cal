@@ -47,3 +47,31 @@ targets:
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: 9L8K7C9GMH
         CODE_SIGN_ENTITLEMENTS: Cal/Cal.entitlements
+
+  CalTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [CalTests]
+    dependencies:
+      - target: Cal
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "6.0"
+  CalUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [CalUITests]
+    dependencies:
+      - target: Cal
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "6.0"
+schemes:
+  Cal:
+    build:
+      targets:
+        Cal: all
+    test:
+      targets: [CalTests, CalUITests]

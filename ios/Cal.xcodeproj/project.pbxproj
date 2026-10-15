@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		00CA38FB4ACF3DA8E3425147 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = C247579277C6BDB35C0370D5 /* ClerkKitUI */; };
+		0C7B38FECE37B859A2A5F167 /* ScheduleStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3969308BA74CDD68A8C599A /* ScheduleStatus.swift */; };
+		1C337E6DC8325F48ED3B17F3 /* UITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7154C9BE0BCB77F8104684A /* UITestSupport.swift */; };
+		25F88CE28B800C5C9A34D1DC /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16D05FC2A3B3F911005924D3 /* WelcomeView.swift */; };
 		2A4182A68FA90E317AC9702C /* DataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBD8CE659F2F8540A6B76BC0 /* DataCache.swift */; };
 		3D8281AB67F77D3DC3B27054 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80DC69FF0689D9E12732ABA2 /* SettingsView.swift */; };
 		4704FC40E50EF7C28452037E /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BD980C6E8DC657AE083FFAC /* AppConfig.swift */; };
@@ -17,8 +20,10 @@
 		673719B34F2673D1CC858142 /* OfflineBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E7A7684673C1EB4178DD59 /* OfflineBannerView.swift */; };
 		6FAF1BEEAC3F3419CBA3E050 /* ICSGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4B9C1BC7B3BAE0656144749 /* ICSGenerator.swift */; };
 		73FC4B8662C2B636A9182928 /* RRuleFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47E18CB03391B4ECA09DF6A9 /* RRuleFormat.swift */; };
+		7A751E2320D2F78D32789390 /* CalUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52671AC7AA58B9EEC332FE98 /* CalUITests.swift */; };
 		7B57D751F8C853A4D7B46F1F /* QuestionWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 447287C3B5EBD1034588A1C4 /* QuestionWizardView.swift */; };
 		7C82C0DC7CF883E12D6660A2 /* AdminView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19773992201D69911409BF0 /* AdminView.swift */; };
+		864C599D9BABDD259CD4BC71 /* CalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71CF81AA9FFA7FAD1805C7A6 /* CalTests.swift */; };
 		8E8B7ED2A7186AD4A44321B8 /* EditEventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 930946440E23F91A4C602A2A /* EditEventView.swift */; };
 		ABD770DE6A46F02177247788 /* CalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48829EA6CAC0E0C7CFD80F24 /* CalApp.swift */; };
 		B62A8AE83A00A0613659499F /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 822F01A242036D110085B8E6 /* HomeView.swift */; };
@@ -31,20 +36,42 @@
 		F4FA8A087B4A90821A1B20A5 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CD85BF993B61076248C1832 /* Models.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		0DB07E00A15B35582A234FF2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F938A6463C8353DF5D44AD5C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A69956B317AAA0AFBF7210C2;
+			remoteInfo = Cal;
+		};
+		ECE6DF90DE33636861810109 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F938A6463C8353DF5D44AD5C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A69956B317AAA0AFBF7210C2;
+			remoteInfo = Cal;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		0BD980C6E8DC657AE083FFAC /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		0CD85BF993B61076248C1832 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		14E7A7684673C1EB4178DD59 /* OfflineBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineBannerView.swift; sourceTree = "<group>"; };
+		16D05FC2A3B3F911005924D3 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		23498BEF85AA8CABE0D14352 /* CalUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CalUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		31F43A16A13023EF884539D2 /* cal.icon */ = {isa = PBXFileReference; path = cal.icon; sourceTree = "<group>"; };
 		3CF8676233E220000A9C87AC /* Cal.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Cal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		447287C3B5EBD1034588A1C4 /* QuestionWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestionWizardView.swift; sourceTree = "<group>"; };
 		471E952848BED0A4EC7134C3 /* SessionRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRowView.swift; sourceTree = "<group>"; };
 		47E18CB03391B4ECA09DF6A9 /* RRuleFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RRuleFormat.swift; sourceTree = "<group>"; };
 		48829EA6CAC0E0C7CFD80F24 /* CalApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalApp.swift; sourceTree = "<group>"; };
+		52671AC7AA58B9EEC332FE98 /* CalUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalUITests.swift; sourceTree = "<group>"; };
 		5372A6C0A242CADE2867E12D /* NewSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSessionView.swift; sourceTree = "<group>"; };
 		55AFC2050A1FFDB9455314FC /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		5944F7C599934C6445E04C66 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
+		6634A49D21ADE66B9BC20D59 /* CalTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6F718078C62350627D280AF6 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		71CF81AA9FFA7FAD1805C7A6 /* CalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalTests.swift; sourceTree = "<group>"; };
 		749E329FE4C75CF1A55EEBB5 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		80DC69FF0689D9E12732ABA2 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		822F01A242036D110085B8E6 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -52,8 +79,10 @@
 		A19773992201D69911409BF0 /* AdminView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminView.swift; sourceTree = "<group>"; };
 		A719C7A770D468E3DA885A34 /* Cal.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Cal.entitlements; sourceTree = "<group>"; };
 		B105CB89D296EEEDAFC8FC3A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B3969308BA74CDD68A8C599A /* ScheduleStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleStatus.swift; sourceTree = "<group>"; };
 		B7FC7C3E89F52EA3B73B1446 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		C4B9C1BC7B3BAE0656144749 /* ICSGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICSGenerator.swift; sourceTree = "<group>"; };
+		C7154C9BE0BCB77F8104684A /* UITestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestSupport.swift; sourceTree = "<group>"; };
 		CBD8CE659F2F8540A6B76BC0 /* DataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataCache.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -70,6 +99,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		05374271AA09D52BCF680FF9 /* PreviewSupport */ = {
+			isa = PBXGroup;
+			children = (
+				C7154C9BE0BCB77F8104684A /* UITestSupport.swift */,
+			);
+			path = PreviewSupport;
+			sourceTree = "<group>";
+		};
+		25E683CD895083A7A2F9A267 /* CalUITests */ = {
+			isa = PBXGroup;
+			children = (
+				52671AC7AA58B9EEC332FE98 /* CalUITests.swift */,
+			);
+			path = CalUITests;
+			sourceTree = "<group>";
+		};
 		312005BE1ABAEBE5C0F1B50B /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -79,11 +124,21 @@
 				5372A6C0A242CADE2867E12D /* NewSessionView.swift */,
 				14E7A7684673C1EB4178DD59 /* OfflineBannerView.swift */,
 				447287C3B5EBD1034588A1C4 /* QuestionWizardView.swift */,
+				B3969308BA74CDD68A8C599A /* ScheduleStatus.swift */,
 				5944F7C599934C6445E04C66 /* SessionDetailView.swift */,
 				471E952848BED0A4EC7134C3 /* SessionRowView.swift */,
 				80DC69FF0689D9E12732ABA2 /* SettingsView.swift */,
+				16D05FC2A3B3F911005924D3 /* WelcomeView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		35509BE10BC1C8D7FB748DC4 /* CalTests */ = {
+			isa = PBXGroup;
+			children = (
+				71CF81AA9FFA7FAD1805C7A6 /* CalTests.swift */,
+			);
+			path = CalTests;
 			sourceTree = "<group>";
 		};
 		3EF84A38AD5D72AE3943BBC5 /* Services */ = {
@@ -107,6 +162,8 @@
 			children = (
 				31F43A16A13023EF884539D2 /* cal.icon */,
 				D7C71F3E44A56E524F2CB49D /* Cal */,
+				35509BE10BC1C8D7FB748DC4 /* CalTests */,
+				25E683CD895083A7A2F9A267 /* CalUITests */,
 				84A1B29F0265D3B7CB807213 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -123,6 +180,8 @@
 			isa = PBXGroup;
 			children = (
 				3CF8676233E220000A9C87AC /* Cal.app */,
+				6634A49D21ADE66B9BC20D59 /* CalTests.xctest */,
+				23498BEF85AA8CABE0D14352 /* CalUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -153,6 +212,7 @@
 				EBDD6E6BF23E85D339B8AF71 /* App */,
 				8652B3EBE3B5AC9DCB154323 /* Models */,
 				A1445213B3C72616FFD0F612 /* Networking */,
+				05374271AA09D52BCF680FF9 /* PreviewSupport */,
 				3EF84A38AD5D72AE3943BBC5 /* Services */,
 				556F58B8F6F26640B37D0DD1 /* Storage */,
 				6CCEBE08247358D68DB76A5B /* ViewModels */,
@@ -174,6 +234,42 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		2393234C32B2BB43CD856CD5 /* CalUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5F446CA56AD482C571644979 /* Build configuration list for PBXNativeTarget "CalUITests" */;
+			buildPhases = (
+				2FC03CFE3031AB2BE7A5BBF7 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				55BB2A62F6F0F17E8C62958E /* PBXTargetDependency */,
+			);
+			name = CalUITests;
+			packageProductDependencies = (
+			);
+			productName = CalUITests;
+			productReference = 23498BEF85AA8CABE0D14352 /* CalUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		3A603E24E0EA5D6ECA13D203 /* CalTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7301878F5637B7C4946B856B /* Build configuration list for PBXNativeTarget "CalTests" */;
+			buildPhases = (
+				C02C0267F297F7E083A2E1BD /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				040D57D574E1BEDF3F7CE244 /* PBXTargetDependency */,
+			);
+			name = CalTests;
+			packageProductDependencies = (
+			);
+			productName = CalTests;
+			productReference = 6634A49D21ADE66B9BC20D59 /* CalTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		A69956B317AAA0AFBF7210C2 /* Cal */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 803EC4570540BBAFE4D01158 /* Build configuration list for PBXNativeTarget "Cal" */;
@@ -204,6 +300,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					2393234C32B2BB43CD856CD5 = {
+						TestTargetID = A69956B317AAA0AFBF7210C2;
+					};
 					A69956B317AAA0AFBF7210C2 = {
 						DevelopmentTeam = 9L8K7C9GMH;
 						ProvisioningStyle = Automatic;
@@ -228,6 +327,8 @@
 			projectRoot = "";
 			targets = (
 				A69956B317AAA0AFBF7210C2 /* Cal */,
+				3A603E24E0EA5D6ECA13D203 /* CalTests */,
+				2393234C32B2BB43CD856CD5 /* CalUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -244,6 +345,22 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		2FC03CFE3031AB2BE7A5BBF7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7A751E2320D2F78D32789390 /* CalUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C02C0267F297F7E083A2E1BD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				864C599D9BABDD259CD4BC71 /* CalTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F521B8869BE458DDDCA56CD9 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -264,13 +381,29 @@
 				7B57D751F8C853A4D7B46F1F /* QuestionWizardView.swift in Sources */,
 				73FC4B8662C2B636A9182928 /* RRuleFormat.swift in Sources */,
 				F48AC0B1C14DCF89E0ECED5C /* RootView.swift in Sources */,
+				0C7B38FECE37B859A2A5F167 /* ScheduleStatus.swift in Sources */,
 				C94659B0EBBF4CAAF7907A63 /* SessionDetailView.swift in Sources */,
 				514A2F0BEF8761B22C0AEEA0 /* SessionRowView.swift in Sources */,
 				3D8281AB67F77D3DC3B27054 /* SettingsView.swift in Sources */,
+				1C337E6DC8325F48ED3B17F3 /* UITestSupport.swift in Sources */,
+				25F88CE28B800C5C9A34D1DC /* WelcomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		040D57D574E1BEDF3F7CE244 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A69956B317AAA0AFBF7210C2 /* Cal */;
+			targetProxy = 0DB07E00A15B35582A234FF2 /* PBXContainerItemProxy */;
+		};
+		55BB2A62F6F0F17E8C62958E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A69956B317AAA0AFBF7210C2 /* Cal */;
+			targetProxy = ECE6DF90DE33636861810109 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1C9A773A8D98C04E86646A6B /* Release */ = {
@@ -295,6 +428,24 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
+		};
+		26FA68A8000ABD40F54EAAB2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.cal.CalTests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Cal.app/Cal";
+			};
+			name = Debug;
 		};
 		3EDFF6CC7696313288C2BBED /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -415,6 +566,60 @@
 			};
 			name = Debug;
 		};
+		60B35ADE4AE1D6548BC6397D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.cal.CalUITests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Cal;
+			};
+			name = Release;
+		};
+		66AB81D2B9325B3FADF5C7E2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.cal.CalUITests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Cal;
+			};
+			name = Debug;
+		};
+		9587E128F1AEA190848BAA77 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.cal.CalTests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Cal.app/Cal";
+			};
+			name = Release;
+		};
 		B3346664A8B48B9C4CB5C5C8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -441,6 +646,24 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		5F446CA56AD482C571644979 /* Build configuration list for PBXNativeTarget "CalUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				66AB81D2B9325B3FADF5C7E2 /* Debug */,
+				60B35ADE4AE1D6548BC6397D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7301878F5637B7C4946B856B /* Build configuration list for PBXNativeTarget "CalTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				26FA68A8000ABD40F54EAAB2 /* Debug */,
+				9587E128F1AEA190848BAA77 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		803EC4570540BBAFE4D01158 /* Build configuration list for PBXNativeTarget "Cal" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

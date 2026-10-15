@@ -12,7 +12,7 @@ struct OfflineBannerView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) {
             Image(systemName: "wifi.slash")
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(.orange)
@@ -29,6 +29,7 @@ struct OfflineBannerView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
+            HStack(spacing: 12) {
             if let onRetry {
                 Button("Retry", systemImage: "arrow.clockwise") {
                     onRetry()
@@ -49,6 +50,7 @@ struct OfflineBannerView: View {
                 .foregroundStyle(.secondary)
                 .frame(minWidth: 44, minHeight: 44)
             }
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
@@ -63,8 +65,7 @@ struct OfflineBannerView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 6)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(message). \(secondaryText)")
+        .accessibilityElement(children: .contain)
     }
 }
 
