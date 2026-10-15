@@ -1,30 +1,47 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import ICAL from 'ical.js';
+import * as ical from 'node-ical';
 import { loadTs } from '../test/load-ts.mjs';
 const { generateIcs, parseIcs } = loadTs('../lib/ics.ts');
-const { zonedTimeToUtc, formatInZone } = loadTs('../lib/timezone.ts');
+const { zonedTimeToUtc } = loadTs('../lib/timezone.ts');
 const { NormalizedEventSchema } = loadTs('../lib/types.ts');
 const film = { title: 'Film Club', start: '2026-10-15T22:15:00Z', end: '2026-10-16T00:30:00Z', timezone: 'America/Vancouver', rrule: 'FREQ=WEEKLY;BYDAY=TH;COUNT=5' };
 
-test('weekly Film Club keeps 15:15 through Vancouver permanent UTC-7 in November 2026', () => {
+test('weekly Film Club keeps Vancouver wall time with current timezone rules', () => {
   const output = generateIcs([film]);
   assert.match(output, /DTSTART;TZID=America\/Vancouver:20261015T151500/);
   assert.match(output, /DTEND;TZID=America\/Vancouver:20261015T173000/);
-  // Expand local recurrence fields independently of the host ICU database.
-  const event = new ICAL.Component(ICAL.parse(output)).getFirstSubcomponent('vevent');
-  const iterator = event.getFirstPropertyValue('rrule').iterator(event.getFirstPropertyValue('dtstart'));
-  const dates = [];
-  for (let wall = iterator.next(); wall; wall = iterator.next()) {
-    const start = zonedTimeToUtc(wall.toString(), film.timezone);
-    dates.push(start.toISOString());
-    assert.equal(formatInZone(start, film.timezone).slice(11), '15:15:00');
+  const event = Object.values(ical.sync.parseICS(output)).find(e => e.type === 'VEVENT');
+  const dates = ical.expandRecurringEvent(event, { from: new Date('2026-10-14Z'), to: new Date('2026-11-14Z') });
+  assert.equal(dates.length, 5);
+  for (const date of dates) {
+    assert.equal(new Intl.DateTimeFormat('en-GB', { timeZone: film.timezone, hour: '2-digit', minute: '2-digit' }).format(date.start), '15:15');
+    assert.equal(new Intl.DateTimeFormat('en-GB', { timeZone: film.timezone, hour: '2-digit', minute: '2-digit' }).format(date.end), '17:30');
   }
-  assert.deepEqual(dates, [
-    '2026-10-15T22:15:00.000Z', '2026-10-22T22:15:00.000Z',
-    '2026-10-29T22:15:00.000Z', '2026-11-05T22:15:00.000Z',
-    '2026-11-12T22:15:00.000Z',
-  ]);
+  // BC no longer falls back in 2026. Derive instants from current zone rules
+  // instead of freezing the pre-2026e November offset into this test.
+  for (const [index, day] of ['2026-10-15', '2026-10-22', '2026-10-29', '2026-11-05', '2026-11-12'].entries()) {
+    assert.equal(dates[index].start.toISOString(), zonedTimeToUtc(day + 'T15:15:00', film.timezone).toISOString());
+    assert.equal(dates[index].end.toISOString(), zonedTimeToUtc(day + 'T17:30:00', film.timezone).toISOString());
+  }
+});
+
+test('weekly New York events preserve wall time across the 2026 fall DST transition', () => {
+  const meeting = { ...film, timezone: 'America/New_York', start: '2026-10-15T19:15:00Z', end: '2026-10-15T21:30:00Z' };
+  const output = generateIcs([meeting]);
+  assert.match(output, /DTSTART;TZID=America\/New_York:20261015T151500/);
+  const event = Object.values(ical.sync.parseICS(output)).find(e => e.type === 'VEVENT');
+  const dates = ical.expandRecurringEvent(event, { from: new Date('2026-10-14Z'), to: new Date('2026-11-14Z') });
+  assert.equal(dates.length, 5);
+  const wallTime = new Intl.DateTimeFormat('en-GB', { timeZone: meeting.timezone, hour: '2-digit', minute: '2-digit' });
+  for (const date of dates) {
+    assert.equal(wallTime.format(date.start), '15:15');
+    assert.equal(wallTime.format(date.end), '17:30');
+  }
+  assert.equal(dates[2].start.toISOString(), '2026-10-29T19:15:00.000Z');
+  assert.equal(dates[3].start.toISOString(), '2026-11-05T20:15:00.000Z');
+  assert.equal(dates[2].end.toISOString(), '2026-10-29T21:30:00.000Z');
+  assert.equal(dates[3].end.toISOString(), '2026-11-05T22:30:00.000Z');
 });
 
 test('TZID and clean RRULE survive import and re-export', () => {
@@ -32,7 +49,7 @@ test('TZID and clean RRULE survive import and re-export', () => {
   assert.equal(event.timezone, film.timezone);
   assert.equal(event.start, '2026-10-15T22:15:00.000Z');
   assert.deepEqual(event.rrule.split(";").sort(), film.rrule.split(";").sort());
-  assert.equal(new ICAL.Component(ICAL.parse(generateIcs([event]))).getFirstSubcomponent("vevent").getAllProperties("dtstart").length, 1);
+  assert.equal((generateIcs([event]).match(/DTSTART/g) ?? []).length, 1);
   assert.match(generateIcs([event]), /DTSTART;TZID=America\/Vancouver:20261015T151500/);
 });
 

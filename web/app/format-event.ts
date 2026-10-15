@@ -1,4 +1,3 @@
-import { formatInZone } from "../lib/timezone";
 import type { NormalizedEvent } from "@/lib/types";
 
 export function formatEventTime(event: NormalizedEvent, timeZone?: string): string {
@@ -11,9 +10,6 @@ export function formatEventTime(event: NormalizedEvent, timeZone?: string): stri
     return format(start) + (last > start ? " – " + format(last) : "") + " · All day";
   }
   const zone = event.timezone || timeZone;
-  const format = (iso: string) => zone
-    // UTC is only a formatting carrier for already-converted wall fields.
-    ? new Date(formatInZone(new Date(iso), zone) + "Z").toLocaleString(undefined, { timeZone: "UTC" })
-    : new Date(iso).toLocaleString();
-  return format(event.start) + " – " + format(event.end);
+  const options = zone ? { timeZone: zone } : undefined;
+  return new Date(event.start).toLocaleString(undefined, options) + " – " + new Date(event.end).toLocaleString(undefined, options);
 }

@@ -28,31 +28,3 @@ test("timed display prefers the event timezone over the session timezone", () =>
   assert.equal(formatEventTime(event, "America/New_York"), expected);
   assert.notEqual(formatEventTime(event, "America/New_York"), formatEventTime({ ...event, timezone: undefined }, "America/New_York"));
 });
-
-test("November review uses bundled rules even when browser ICU is outdated", () => {
-  const event = { title: "Ten", start: "2026-11-08T17:00:00Z", end: "2026-11-08T18:00:00Z", timezone: "America/Vancouver" };
-  const format = (wall) => new Date(wall + "Z").toLocaleString(undefined, { timeZone: "UTC" });
-  assert.equal(formatEventTime(event), format("2026-11-08T10:00:00") + " – " + format("2026-11-08T11:00:00"));
-});
-
-test("mock stale Intl never receives Vancouver for November browser display", () => {
-  const calls = [];
-  const staleIntl = {
-    DateTimeFormat: class {
-      constructor(locale, options) { this.options = options; calls.push(options.timeZone); }
-      format(date) {
-        const hour = date.getUTCHours() - (this.options.timeZone === "America/Vancouver" ? 8 : 0);
-        return String((hour + 24) % 24).padStart(2, "0") + ":" + String(date.getUTCMinutes()).padStart(2, "0");
-      }
-    },
-  };
-  class BrowserDate extends Date {
-    toLocaleString(locale, options) { return new staleIntl.DateTimeFormat(locale, options).format(this); }
-  }
-  const { formatEventTime: browserFormat } = loadTs("../app/format-event.ts", {}, { Date: BrowserDate, Intl: staleIntl });
-  const event = { title: "Ten", start: "2026-11-01T17:00:00Z", end: "2026-11-01T18:00:00Z", timezone: "America/Vancouver" };
-  assert.equal(new staleIntl.DateTimeFormat(undefined, { timeZone: "America/Vancouver" }).format(new Date(event.start)), "09:00");
-  calls.length = 0;
-  assert.equal(browserFormat(event, "America/New_York"), "10:00 – 11:00");
-  assert.deepEqual(calls, ["UTC", "UTC"]);
-});

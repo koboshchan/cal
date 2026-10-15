@@ -1,6 +1,6 @@
 Cal Privacy Policy
 
-Draft for review, not yet effective. Prepared October 9, 2026.
+Draft for review, not yet effective. Prepared October 9, 2026; rechecked against the code October 15, 2026.
 
 Lucas Zhang, also known as kobosh, operates Cal at cal.kobosh.com as a minor-run hobby project in British Columbia, Canada. Lucas is responsible for privacy questions and requests at lz@kjt.lol. This policy covers Cal's web service and companion clients using the same backend.
 

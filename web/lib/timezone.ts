@@ -1,26 +1,49 @@
 import { Temporal } from "@js-temporal/polyfill";
-import moment from "moment-timezone";
 
 const HAS_OFFSET = /(Z|[+-]\d{2}:?\d{2})$/;
 
-// Full IANA data is bundled with the pinned package, not borrowed from Node ICU.
-export const timezoneDataVersion = moment.tz.dataVersion;
-
-/** RFC 5545 compatible disambiguation: first fold occurrence, gaps shift forward. */
+/**
+ * Converts a naive local wall-clock ISO string (no timezone offset — what
+ * the agent's sandboxed code emits) representing a time in `timeZone` into
+ * the correct UTC instant. If the string already carries an explicit
+ * offset/Z, it's trusted as-is instead of being converted a second time.
+ *
+ * This deliberately lives in trusted host code, not the sandbox: DST and
+ * IANA zone data are exactly the kind of thing a model gets subtly wrong
+ * without anyone noticing until the wrong hour shows up.
+ */
 export function zonedTimeToUtc(iso: string, timeZone: string): Date {
-  if (HAS_OFFSET.test(iso)) return new Date(Temporal.Instant.from(iso).epochMilliseconds);
-  if (!isValidTimezone(timeZone)) throw new RangeError(`Invalid timezone: ${timeZone}`);
-  // Temporal validates the calendar fields without invoking its ICU-backed zoning.
-  const local = Temporal.PlainDateTime.from(iso);
-  return moment.tz(local.toString(), moment.ISO_8601, true, timeZone).toDate();
+  const instant = HAS_OFFSET.test(iso)
+    ? Temporal.Instant.from(iso)
+    : Temporal.PlainDateTime.from(iso)
+        // RFC 5545: first occurrence of a repeated time, shift skipped times forward.
+        .toZonedDateTime(timeZone, { disambiguation: "compatible" })
+        .toInstant();
+  return new Date(instant.epochMilliseconds);
 }
 
-/** The inverse, using the same bundled rules as generation and ICS. */
+/** The inverse: formats a real instant as a naive "YYYY-MM-DDTHH:mm:ss" local to `timeZone`. */
 export function formatInZone(date: Date, timeZone: string): string {
-  if (!isValidTimezone(timeZone)) throw new RangeError(`Invalid timezone: ${timeZone}`);
-  return moment.tz(date, timeZone).format("YYYY-MM-DDTHH:mm:ss");
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value;
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}:${get("second")}`;
 }
 
+/** Reject invalid zones instead of silently turning a local recurrence into UTC. */
 export function isValidTimezone(value: string): boolean {
-  return Boolean(moment.tz.zone(value));
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
 }

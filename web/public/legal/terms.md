@@ -1,6 +1,6 @@
 Cal Terms of Service
 
-Draft for review, not yet effective. Prepared October 9, 2026.
+Draft for review, not yet effective. Prepared October 9, 2026; rechecked against the code October 15, 2026.
 
 Cal at cal.kobosh.com is a hobby project operated by Lucas Zhang, also known as kobosh, in British Columbia, Canada. The operator is a minor, not a corporation or a school. Cal turns schedule instructions, calendar files, and optional images into calendars using AI. These terms cover the web service and companion clients that use it.
 

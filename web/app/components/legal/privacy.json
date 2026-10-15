@@ -1,6 +1,6 @@
 [
   "Cal Privacy Policy",
-  "Draft for review, not yet effective. Prepared October 9, 2026.",
+  "Draft for review, not yet effective. Prepared October 9, 2026; rechecked against the code October 15, 2026.",
   "Lucas Zhang, also known as kobosh, operates Cal at cal.kobosh.com as a minor-run hobby project in British Columbia, Canada. Lucas is responsible for privacy questions and requests at lz@kjt.lol. This policy covers Cal's web service and companion clients using the same backend.",
   "Clerk handles sign-in and account management. Cal stores your Clerk user identifier, email address, registration time, and, if requested, a secret calendar feed token. Clerk also processes the account information you give it and the session and device information needed for authentication. Cal does not store your Clerk password.",
   "Cal processes schedule instructions, imported ICS event details, optional schedule images, clarification answers, refinement requests, and your device's time-zone identifier. Saved calendars include titles, descriptions, event dates and times, locations, recurrence rules, alarms, generated ICS content, generation history, generated code versions, processing status, errors, and timestamps. A location written in an event is not GPS tracking.",

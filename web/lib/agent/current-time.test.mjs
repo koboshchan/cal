@@ -11,7 +11,7 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "run.ts"), "utf8")
 const expression = source.match(/system: (SYSTEM_PROMPT \+[\s\S]*?),\n      messages:/)[1];
 const timezone = ts.transpileModule(
   fs.readFileSync(path.join(import.meta.dirname, "../timezone.ts"), "utf8"),
-  { compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true } },
+  { compilerOptions: { module: ts.ModuleKind.CommonJS } },
 ).outputText;
 const timezoneContext = { exports: {}, require: createRequire(import.meta.url) };
 vm.runInNewContext(timezone, timezoneContext);
