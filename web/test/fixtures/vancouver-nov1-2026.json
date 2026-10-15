@@ -1,0 +1,8 @@
+{
+  "timezone": "America/Vancouver",
+  "wallStart": "2026-11-01T10:00:00",
+  "wallEnd": "2026-11-01T11:00:00",
+  "expectedStart": "2026-11-01T17:00:00.000Z",
+  "expectedEnd": "2026-11-01T18:00:00.000Z",
+  "expectedIcsStart": "DTSTART;TZID=America/Vancouver:20261101T100000"
+}

@@ -2,7 +2,7 @@
 
 Timed events now persist an optional `timezone` IANA identifier. Newly generated events default to the session timezone. Explicit event zones survive generation, refinement, imports and edits. Existing clients may omit the field; editing retains the old event zone or inherits the session zone.
 
-ICS exports use local DTSTART/DTEND with TZID. They rely on calendar clients' IANA timezone databases rather than embedding VTIMEZONE. All-day events remain VALUE=DATE. Events without either an event or session timezone retain the previous UTC export behavior.
+ICS exports use local DTSTART/DTEND with TZID. They embed VTIMEZONE from the same pinned bundle, so clients need not have current host timezone data. All-day events remain VALUE=DATE. Events without either an event or session timezone retain the previous UTC export behavior.
 
 ## Existing data
 
@@ -32,8 +32,13 @@ node-ical remains the fallback for custom/non-IANA zones and floating imports;
 those retain the existing host/embedded-zone semantics. Imported recurrences
 remain local TZID plus RRULE, not expanded instants. Embedded VTIMEZONE definitions
 for recognized IANA names do not override current IANA policy in normalized data.
-Exports still omit VTIMEZONE, so recipient calendar clients need up-to-date IANA
-data themselves. Old exported files and old incorrectly generated UTC instants
+Exports embed each distinct event zone exactly once using the pinned bundle's full
+transition table, including its initial offset and every finite transition. Identical
+observances are grouped into RDATE sets, avoiding hundreds of separate components. This
+is an RFC 5545 serialization adapter, not a custom timezone policy. The explicit
+transition horizon is the bundled data horizon (currently through 2499 for zones
+with continuing DST); beyond it the final offset persists, as in Moment itself.
+Updating the pinned data remains necessary when future laws change. Old exported files and old incorrectly generated UTC instants
 are not retroactively repaired by this change; regenerate/reimport when necessary.
 
 Node 24.x remains required for isolated-vm's native ABI, as documented in the

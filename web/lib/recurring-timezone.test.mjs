@@ -32,7 +32,7 @@ test('TZID and clean RRULE survive import and re-export', () => {
   assert.equal(event.timezone, film.timezone);
   assert.equal(event.start, '2026-10-15T22:15:00.000Z');
   assert.deepEqual(event.rrule.split(";").sort(), film.rrule.split(";").sort());
-  assert.equal((generateIcs([event]).match(/DTSTART/g) ?? []).length, 1);
+  assert.equal(new ICAL.Component(ICAL.parse(generateIcs([event]))).getFirstSubcomponent("vevent").getAllProperties("dtstart").length, 1);
   assert.match(generateIcs([event]), /DTSTART;TZID=America\/Vancouver:20261015T151500/);
 });
 

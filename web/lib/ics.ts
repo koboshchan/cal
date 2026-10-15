@@ -3,6 +3,7 @@ import IcalGenerator, { ICalAlarmType } from "ical-generator";
 import moment from "moment-timezone";
 import ICAL from "ical.js";
 import { isValidTimezone, zonedTimeToUtc } from "./timezone";
+import { bundledVtimezone } from "./vtimezone";
 import type { NormalizedEvent } from "./types";
 
 /** `summary`/`location`/`description` may be a bare string or `{val, params}`. */
@@ -91,6 +92,7 @@ export function parseIcs(icsText: string): NormalizedEvent[] {
 /** Serializes normalized events back out to a downloadable .ics string. */
 export function generateIcs(events: NormalizedEvent[], defaultTimezone?: string): string {
   const calendar = IcalGenerator({ name: "Cal" });
+  calendar.timezone({ name: null, generator: bundledVtimezone });
   for (const event of events) {
     const zone = event.allDay ? undefined : event.timezone ?? defaultTimezone;
     if (zone && !isValidTimezone(zone)) throw new Error(`Invalid event timezone: ${zone}`);
