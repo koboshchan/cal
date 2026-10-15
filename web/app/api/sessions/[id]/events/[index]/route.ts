@@ -1,3 +1,4 @@
+import { readJsonBody } from "@/lib/request-json";
 import { requireUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { getOwnedSession, removeResultEvent, updateResultEvent, serializeSessionDetail } from "@/lib/sessions";
@@ -29,7 +30,7 @@ export async function PATCH(
     const { id, index } = await params;
     const session = await getOwnedSession(id, user.clerkUserId);
 
-    const event = NormalizedEventSchema.parse(await request.json());
+    const event = NormalizedEventSchema.parse(await readJsonBody(request));
     await updateResultEvent(session, Number(index), event);
 
     return Response.json(serializeSessionDetail(session));

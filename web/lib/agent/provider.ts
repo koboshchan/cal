@@ -14,7 +14,7 @@ export async function getChatModel() {
   const settings = await getSettings();
   if (!settings) {
     throw new NotConfiguredError(
-      "No LLM provider configured yet — an admin needs to set one up on the /admin page.",
+      "Calendar generation is not configured. Ask the site administrator to configure the AI provider, then retry this saved calendar.",
     );
   }
   const provider = createOpenAI({ baseURL: settings.baseURL, apiKey: settings.apiKey });
@@ -30,7 +30,7 @@ export async function getVisionModel() {
   const settings = await getSettings();
   if (!settings) {
     throw new NotConfiguredError(
-      "No LLM provider configured yet — an admin needs to set one up on the /admin page.",
+      "Calendar generation is not configured. Ask the site administrator to configure the AI provider, then retry this saved calendar.",
     );
   }
   const provider = createOpenAI({ baseURL: settings.baseURL, apiKey: settings.apiKey });

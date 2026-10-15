@@ -1,3 +1,4 @@
+import { readJsonBody } from "@/lib/request-json";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
@@ -41,7 +42,7 @@ const PutBody = z.object({
 export async function PUT(request: Request) {
   try {
     await requireAdmin();
-    const body = PutBody.parse(await request.json());
+    const body = PutBody.parse(await readJsonBody(request));
     const db = await getDb();
     const settings = db.collection<SettingsDoc>("settings");
 

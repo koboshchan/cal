@@ -1,4 +1,6 @@
+import { readJsonBody } from "@/lib/request-json";
 import { z } from "zod";
+import { SessionTitleSchema } from "@/lib/session-title";
 import { requireUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { getDb } from "@/lib/mongodb";
@@ -16,7 +18,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 }
 
-const PatchBody = z.object({ title: z.string().min(1) });
+const PatchBody = z.object({ title: SessionTitleSchema });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -24,7 +26,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { id } = await params;
     const session = await getOwnedSession(id, user.clerkUserId);
 
-    const { title } = PatchBody.parse(await request.json());
+    const { title } = PatchBody.parse(await readJsonBody(request));
     session.title = title;
     session.updatedAt = new Date();
 

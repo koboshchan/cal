@@ -37,9 +37,9 @@ export async function POST(request: Request) {
     const imageFiles = form.getAll("imageFiles").filter((f): f is File => f instanceof File);
     const timezone = validTimezone(String(form.get("timezone") ?? ""));
 
-    if (!userPrompt && !icsFile) {
+    if (!userPrompt && !(icsFile instanceof File) && imageFiles.length === 0) {
       return Response.json(
-        { error: "Provide at least a text prompt or an .ics file" },
+        { error: "Provide a text prompt, schedule photo, or .ics file" },
         { status: 400 },
       );
     }

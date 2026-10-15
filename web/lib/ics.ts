@@ -36,6 +36,12 @@ export function parseAlarmTriggerSeconds(trigger: number | string): number | nul
   return isNaN(num) ? null : num;
 }
 
+function localDate(value: Date): string {
+  // node-ical represents VALUE=DATE using local midnight, not a UTC instant.
+  const date = new Date(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 /** Parses raw .ics text into plain, sandbox/model-safe JSON events. */
 export function parseIcs(icsText: string): NormalizedEvent[] {
   const parsed = ical.sync.parseICS(icsText);
@@ -53,8 +59,8 @@ export function parseIcs(icsText: string): NormalizedEvent[] {
     const zone = (item.start as Date & { tz?: string }).tz;
     events.push({
       title: textValue(item.summary) ?? "Untitled event",
-      start: new Date(item.start).toISOString(),
-      end: new Date(item.end ?? item.start).toISOString(),
+      start: allDay ? localDate(item.start) : new Date(item.start).toISOString(),
+      end: allDay ? localDate(item.end ?? item.start) : new Date(item.end ?? item.start).toISOString(),
       ...(allDay ? { allDay: true } : {}),
       ...(!allDay && zone && isValidTimezone(zone) ? { timezone: zone } : {}),
       ...(location ? { location } : {}),
