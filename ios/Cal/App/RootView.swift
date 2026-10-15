@@ -8,23 +8,26 @@ struct RootView: View {
 
     var body: some View {
         Group {
+            #if DEBUG
+            if let screen = UITestSupport.screen {
+                UITestHost(screen: screen)
+            } else {
+                authenticatedContent
+            }
+            #else
+            authenticatedContent
+            #endif
+        }
+        .sheet(isPresented: $authIsPresented) { AuthView() }
+    }
+
+    private var authenticatedContent: some View {
+        Group {
             if clerk.user != nil {
                 HomeView()
             } else {
-                VStack(spacing: 16) {
-                    Text("Cal")
-                        .font(.largeTitle.bold())
-                    Text("Describe your schedule. Get a calendar.")
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-                    Button("Sign in") { authIsPresented = true }
-                        .buttonStyle(.borderedProminent)
-                }
+                WelcomeView { authIsPresented = true }
             }
-        }
-        .sheet(isPresented: $authIsPresented) {
-            AuthView()
         }
     }
 }

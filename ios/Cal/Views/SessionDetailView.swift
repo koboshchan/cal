@@ -40,12 +40,30 @@ struct SessionDetailView: View {
     var body: some View {
         List {
             if let loadError, !isOfflineBannerVisible {
-                Text(loadError).foregroundStyle(.red)
+                Section {
+                    Label(loadError, systemImage: "exclamationmark.circle").foregroundStyle(.red)
+                    Button("Try again") { Task { await pollUntilSettled() } }
+                }
+            }
+
+            if session == nil && loadError == nil {
+                HStack(spacing: 12) {
+                    ProgressView()
+                    Text("Loading your schedule…").foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
             }
 
             if let session {
                 Section {
-                    Text(session.title).font(.headline)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label(ScheduleStatus.title(for: session.status), systemImage: ScheduleStatus.symbol(for: session.status))
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(ScheduleStatus.color(for: session.status))
+                        Text(session.title).font(.title2.bold())
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.vertical, 8)
                     if let description = session.description, !description.isEmpty {
                         Text(description).font(.subheadline).foregroundStyle(.secondary)
                     }
@@ -77,7 +95,7 @@ struct SessionDetailView: View {
                     }
                 }
 
-                if session.status == "awaiting_input", let questions = session.pendingQuestions {
+                if session.status == "awaiting_input", let questions = session.pendingQuestions, !questions.isEmpty {
                     Section {
                         // Keying on the question batch's identity forces SwiftUI to
                         // recreate this view (resetting its @State) whenever a new
@@ -92,22 +110,27 @@ struct SessionDetailView: View {
                 }
 
                 if session.status == "done", let events = session.resultEvents {
-                    Section("Calendar") {
+                    Section("Events") {
+                        if events.isEmpty {
+                            ContentUnavailableView("No events", systemImage: "calendar", description: Text("Ask for a change below to add something to this schedule."))
+                        }
                         ForEach(Array(events.enumerated()), id: \.offset) { index, event in
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(event.title).font(.body)
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(event.title).font(.headline)
                                 if let start = event.startDate, let end = event.endDate {
                                     Text("\(start.formatted()) – \(end.formatted())")
-                                        .font(.caption)
+                                        .font(.subheadline)
                                         .foregroundStyle(.secondary)
                                 }
                                 if let rrule = event.formattedRRule {
-                                    Text("Repeats: \(rrule)").font(.caption2).foregroundStyle(.secondary)
+                                    Text("Repeats: \(rrule)").font(.subheadline).foregroundStyle(.secondary)
                                 }
                                 if let location = event.location, !location.isEmpty {
-                                    Text(location).font(.caption).foregroundStyle(.secondary)
+                                    Label(location, systemImage: "mappin.and.ellipse").font(.subheadline).foregroundStyle(.secondary)
                                 }
                             }
+                            .padding(.vertical, 8)
+                            .accessibilityElement(children: .combine)
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) {
                                     deleteEvent(index)
@@ -146,8 +169,9 @@ struct SessionDetailView: View {
 
                 if session.status == "done" || session.status == "error" {
                     Section("Ask for a change") {
-                        TextField("e.g. \"move gym to 6am\"", text: $refineText)
-                        Button(refining ? "Working…" : "Send") { submitRefine() }
+                        TextField("e.g. move gym to 6am", text: $refineText, axis: .vertical)
+                            .lineLimit(2...5)
+                        Button(refining ? "Working…" : "Send change", systemImage: "arrow.up.circle") { submitRefine() }
                             .disabled(refining || refineText.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
@@ -157,7 +181,9 @@ struct SessionDetailView: View {
         // the nav bar's reserved title space when there's a real title
         // behind it — leaving `navigationTitle` unset here left a tall
         // empty gap where a large title would otherwise go, never drawn.
-        .navigationTitle(session?.title ?? "New schedule")
+        .listStyle(.insetGrouped)
+        .scrollDismissesKeyboard(.interactively)
+        .navigationTitle("Schedule")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             // Only shown when this view has no back button of its own to
@@ -220,6 +246,9 @@ struct SessionDetailView: View {
     /// "do the work" and "poll for status" mechanism — there's no background
     /// worker making progress on its own between calls.
     private func pollUntilSettled() async {
+        #if DEBUG
+        if UITestSupport.screen != nil { return }
+        #endif
         while !Task.isCancelled {
             do {
                 let latest = try await APIClient.continueSession(id: sessionId)
