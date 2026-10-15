@@ -18,7 +18,13 @@ function connectClient(): Promise<MongoClient> {
       clientPromise = new MongoClient(uri).connect();
     }
   }
-  return clientPromise;
+  const pending = clientPromise;
+  return pending.catch((error: unknown) => {
+    // Never permanently cache a rejected promise after a transient outage.
+    if (clientPromise === pending) clientPromise = undefined;
+    if (process.env.NODE_ENV === "development" && global._mongoClientPromise === pending) global._mongoClientPromise = undefined;
+    throw error;
+  });
 }
 
 let indexesEnsured: Promise<void> | undefined;
@@ -35,6 +41,12 @@ export async function getDb(): Promise<Db> {
   const client = await connectClient();
   const db = client.db();
   if (!indexesEnsured) indexesEnsured = ensureIndexes(db);
-  await indexesEnsured;
+  const pendingIndexes = indexesEnsured;
+  try {
+    await pendingIndexes;
+  } catch (error) {
+    if (indexesEnsured === pendingIndexes) indexesEnsured = undefined;
+    throw error;
+  }
   return db;
 }

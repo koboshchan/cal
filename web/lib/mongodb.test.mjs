@@ -25,3 +25,32 @@ test("import is side-effect free; requests connect and ensure indexes once", asy
   assert.equal(indexes, 3);
   if (old !== undefined) process.env.MONGODB_URI = old;
 });
+
+test("a transient connection failure can recover on the next request", async () => {
+  let connections = 0;
+  const db = { collection: () => ({ createIndex: async () => {} }) };
+  const { getDb } = loadTs("../lib/mongodb.ts", {
+    mongodb: { MongoClient: class {
+      async connect() { if (++connections === 1) throw new Error("Temporary connection failure"); return this; }
+      async close() {}
+      db() { return db; }
+    } },
+  }, { process: { env: { NODE_ENV: "production", MONGODB_URI: "mongodb://test/cal" } } });
+  await assert.rejects(getDb(), /Temporary connection failure/);
+  assert.equal(await getDb(), db);
+  assert.equal(connections, 2);
+});
+
+test("a transient index failure is retried without reconnecting", async () => {
+  let attempts = 0;
+  const db = { collection: () => ({ createIndex: async () => { if (++attempts === 1) throw new Error("Temporary index failure"); } }) };
+  const { getDb } = loadTs("../lib/mongodb.ts", {
+    mongodb: { MongoClient: class {
+      async connect() { return this; }
+      db() { return db; }
+    } },
+  }, { process: { env: { NODE_ENV: "production", MONGODB_URI: "mongodb://test/cal" } } });
+  await assert.rejects(getDb(), /Temporary index failure/);
+  assert.equal(await getDb(), db);
+  assert.equal(attempts, 6);
+});
