@@ -77,3 +77,26 @@ test("November 1 sandbox generation JSON and independent ICS client match the fi
   assert.equal(event.endDate.toJSDate().toISOString(), fixture.expectedEnd);
   ICAL.TimezoneService.reset();
 });
+
+test("timezone data overhead is bounded per distinct zone for a huge calendar", () => {
+  const event = { title: "Ten", timezone: "America/New_York", start: "2026-11-01T15:00:00Z", end: "2026-11-01T16:00:00Z" };
+  const one = generateIcs([event]);
+  const many = generateIcs(Array.from({ length: 1000 }, () => event));
+  const block = (text) => text.match(/BEGIN:VTIMEZONE[\s\S]*?END:VTIMEZONE/)[0];
+  assert.equal(block(many), block(one));
+  assert.equal((many.match(/BEGIN:VTIMEZONE/g) ?? []).length, 1);
+  assert.ok(Buffer.byteLength(block(many)) < 40000);
+  assert.ok((block(many).match(/BEGIN:(STANDARD|DAYLIGHT)/g) ?? []).length < 20);
+});
+
+test("explicit offset instants remain authoritative and zoneless exports remain UTC", () => {
+  const event = { title: "Offset", start: "2026-11-01T10:00:00-08:00", end: "2026-11-01T11:00:00-08:00" };
+  const zoneless = generateIcs([event]);
+  assert.match(zoneless, /DTSTART:20261101T180000Z/);
+  assert.doesNotMatch(zoneless, /BEGIN:VTIMEZONE/);
+  ICAL.TimezoneService.reset();
+  const { calendar, output } = calendarReader([{ ...event, timezone: "America/Vancouver" }]);
+  assert.match(output, /DTSTART;TZID=America\/Vancouver:20261101T110000/);
+  assert.equal(new ICAL.Event(calendar.getFirstSubcomponent("vevent")).startDate.toJSDate().toISOString(), "2026-11-01T18:00:00.000Z");
+  ICAL.TimezoneService.reset();
+});
