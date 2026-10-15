@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { getDb } from "@/lib/mongodb";
 import { parseIcs } from "@/lib/ics";
+import { isValidTimezone } from "@/lib/timezone";
 import { describeImages } from "@/lib/agent/vision";
 import { summarizeRequest } from "@/lib/agent/summarize";
 import { initializeSession } from "@/lib/agent/run";
@@ -92,10 +93,5 @@ export async function POST(request: Request) {
 }
 
 function validTimezone(name: string): string {
-  try {
-    new Intl.DateTimeFormat(undefined, { timeZone: name });
-    return name;
-  } catch {
-    return "UTC";
-  }
+  return isValidTimezone(name) ? name : "UTC";
 }

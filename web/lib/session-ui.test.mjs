@@ -28,3 +28,9 @@ test("timed display prefers the event timezone over the session timezone", () =>
   assert.equal(formatEventTime(event, "America/New_York"), expected);
   assert.notEqual(formatEventTime(event, "America/New_York"), formatEventTime({ ...event, timezone: undefined }, "America/New_York"));
 });
+
+test("November review uses bundled rules even when browser ICU is outdated", () => {
+  const event = { title: "Ten", start: "2026-11-08T17:00:00Z", end: "2026-11-08T18:00:00Z", timezone: "America/Vancouver" };
+  const format = (wall) => new Date(wall + "Z").toLocaleString(undefined, { timeZone: "UTC" });
+  assert.equal(formatEventTime(event), format("2026-11-08T10:00:00") + " – " + format("2026-11-08T11:00:00"));
+});

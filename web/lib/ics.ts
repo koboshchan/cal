@@ -1,7 +1,8 @@
 import * as ical from "node-ical";
 import IcalGenerator, { ICalAlarmType } from "ical-generator";
-import { DateTime } from "luxon";
-import { isValidTimezone } from "./timezone";
+import moment from "moment-timezone";
+import ICAL from "ical.js";
+import { isValidTimezone, zonedTimeToUtc } from "./timezone";
 import type { NormalizedEvent } from "./types";
 
 /** `summary`/`location`/`description` may be a bare string or `{val, params}`. */
@@ -46,6 +47,12 @@ function localDate(value: Date): string {
 export function parseIcs(icsText: string): NormalizedEvent[] {
   const parsed = ical.sync.parseICS(icsText);
   const events: NormalizedEvent[] = [];
+  // node-ical still handles text, custom zones and legacy input. Read original
+  // wall fields through a standards parser so stale host ICU cannot alter IANA imports.
+  const components = new ICAL.Component(ICAL.parse(icsText)).getAllSubcomponents("vevent");
+  const byUid = new Map(components.filter((component) => !component.hasProperty("recurrence-id")).map((component) => [
+    String(component.getFirstPropertyValue("uid")), component,
+  ]));
 
   for (const raw of Object.values(parsed)) {
     // node-ical's CalendarComponent union doesn't discriminate cleanly
@@ -54,13 +61,23 @@ export function parseIcs(icsText: string): NormalizedEvent[] {
     if (!raw || raw.type !== "VEVENT") continue;
     const item = raw as ical.VEvent;
     const allDay = item.datetype === "date";
+    const component = byUid.get(item.uid);
+    const originalInstant = (name: string, fallback: Date): string => {
+      const property = component?.getFirstProperty(name);
+      const zone = property?.getParameter("tzid");
+      const value = property?.getFirstValue();
+      if (typeof zone === "string" && isValidTimezone(zone) && value instanceof ICAL.Time && !value.isDate) {
+        return zonedTimeToUtc(value.toString(), zone).toISOString();
+      }
+      return new Date(fallback).toISOString();
+    };
     const location = textValue(item.location);
     const description = textValue(item.description);
     const zone = (item.start as Date & { tz?: string }).tz;
     events.push({
       title: textValue(item.summary) ?? "Untitled event",
-      start: allDay ? localDate(item.start) : new Date(item.start).toISOString(),
-      end: allDay ? localDate(item.end ?? item.start) : new Date(item.end ?? item.start).toISOString(),
+      start: allDay ? localDate(item.start) : originalInstant("dtstart", item.start),
+      end: allDay ? localDate(item.end ?? item.start) : originalInstant(item.end ? "dtend" : "dtstart", item.end ?? item.start),
       ...(allDay ? { allDay: true } : {}),
       ...(!allDay && zone && isValidTimezone(zone) ? { timezone: zone } : {}),
       ...(location ? { location } : {}),
@@ -77,11 +94,11 @@ export function generateIcs(events: NormalizedEvent[], defaultTimezone?: string)
   for (const event of events) {
     const zone = event.allDay ? undefined : event.timezone ?? defaultTimezone;
     if (zone && !isValidTimezone(zone)) throw new Error(`Invalid event timezone: ${zone}`);
-    // Luxon gives the serializer real zone-aware wall times, independent of server TZ.
+    // Moment objects carry bundled zone rules through the serializer, independent of ICU/server TZ.
     const createdEvent = calendar.createEvent({
       summary: event.title,
-      start: zone ? DateTime.fromISO(event.start, { zone }) : new Date(event.start),
-      end: zone ? DateTime.fromISO(event.end, { zone }) : new Date(event.end),
+      start: zone ? moment.tz(event.start, moment.ISO_8601, true, zone) : new Date(event.start),
+      end: zone ? moment.tz(event.end, moment.ISO_8601, true, zone) : new Date(event.end),
       timezone: zone,
       allDay: event.allDay ?? false,
       location: event.location,

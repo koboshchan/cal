@@ -9,6 +9,7 @@ function handler() {
     "@/lib/api-errors": { handleApiError: (error) => { throw error; } },
     "@/lib/mongodb": { getDb: async () => ({ collection: () => ({ insertOne: async (session) => { state.saved = session; return { insertedId: "new-calendar" }; } }) }) },
     "@/lib/ics": { parseIcs: () => [] },
+    "@/lib/timezone": loadTs("../lib/timezone.ts"),
     "@/lib/agent/vision": { describeImages: async (images) => { state.images = images.length; return "Club timetable"; } },
     "@/lib/agent/summarize": { summarizeRequest: async () => ({ title: "Clubs", description: "Club schedule" }) },
     "@/lib/agent/run": { initializeSession: () => {} },
