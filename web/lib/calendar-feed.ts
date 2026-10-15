@@ -19,11 +19,18 @@ export async function getOrCreateFeedToken(clerkUserId: string): Promise<string>
   if (existing?.calendarFeedToken) return existing.calendarFeedToken;
 
   const token = randomBytes(24).toString("hex");
-  await users.updateOne({ clerkUserId }, { $set: { calendarFeedToken: token } });
-  return token;
+  // Compare-and-set: concurrent first requests must return the same credential.
+  await users.updateOne(
+    { clerkUserId, calendarFeedToken: { $exists: false } },
+    { $set: { calendarFeedToken: token } },
+  );
+  const saved = await users.findOne({ clerkUserId });
+  if (!saved?.calendarFeedToken) throw new Error("Calendar feed user not found");
+  return saved.calendarFeedToken;
 }
 
 export async function generateFeedIcsForToken(token: string): Promise<string | null> {
+  if (!/^[a-f0-9]{48}$/.test(token)) return null;
   const db = await getDb();
   const user = await db.collection<UserDoc>("users").findOne({ calendarFeedToken: token });
   if (!user) return null;
@@ -31,9 +38,11 @@ export async function generateFeedIcsForToken(token: string): Promise<string | n
   const sessions = await db
     .collection<AgentSessionDoc>("sessions")
     .find({ userId: user.clerkUserId, status: "done" })
-    .project<{ resultEvents: AgentSessionDoc["resultEvents"] }>({ resultEvents: 1 })
+    .project<Pick<AgentSessionDoc, "resultEvents" | "timezone">>({ resultEvents: 1, timezone: 1 })
     .toArray();
 
-  const events = sessions.flatMap((s) => s.resultEvents ?? []);
+  const events = sessions.flatMap((s) => (s.resultEvents ?? []).map((event) => ({
+    ...event, timezone: event.timezone ?? s.timezone,
+  })));
   return generateIcs(events);
 }

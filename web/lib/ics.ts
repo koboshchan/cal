@@ -1,5 +1,7 @@
 import * as ical from "node-ical";
 import IcalGenerator, { ICalAlarmType } from "ical-generator";
+import { DateTime } from "luxon";
+import { isValidTimezone } from "./timezone";
 import type { NormalizedEvent } from "./types";
 
 /** `summary`/`location`/`description` may be a bare string or `{val, params}`. */
@@ -34,6 +36,12 @@ export function parseAlarmTriggerSeconds(trigger: number | string): number | nul
   return isNaN(num) ? null : num;
 }
 
+function localDate(value: Date): string {
+  // node-ical represents VALUE=DATE using local midnight, not a UTC instant.
+  const date = new Date(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 /** Parses raw .ics text into plain, sandbox/model-safe JSON events. */
 export function parseIcs(icsText: string): NormalizedEvent[] {
   const parsed = ical.sync.parseICS(icsText);
@@ -48,27 +56,33 @@ export function parseIcs(icsText: string): NormalizedEvent[] {
     const allDay = item.datetype === "date";
     const location = textValue(item.location);
     const description = textValue(item.description);
+    const zone = (item.start as Date & { tz?: string }).tz;
     events.push({
       title: textValue(item.summary) ?? "Untitled event",
-      start: new Date(item.start).toISOString(),
-      end: new Date(item.end ?? item.start).toISOString(),
+      start: allDay ? localDate(item.start) : new Date(item.start).toISOString(),
+      end: allDay ? localDate(item.end ?? item.start) : new Date(item.end ?? item.start).toISOString(),
       ...(allDay ? { allDay: true } : {}),
+      ...(!allDay && zone && isValidTimezone(zone) ? { timezone: zone } : {}),
       ...(location ? { location } : {}),
       ...(description ? { description } : {}),
-      ...(item.rrule ? { rrule: item.rrule.toString().replace(/^RRULE:/, "") } : {}),
+      ...(item.rrule ? { rrule: item.rrule.toString().split(/\r?\n/).find((line) => line.startsWith("RRULE:"))?.slice(6) } : {}),
     });
   }
   return events;
 }
 
 /** Serializes normalized events back out to a downloadable .ics string. */
-export function generateIcs(events: NormalizedEvent[]): string {
+export function generateIcs(events: NormalizedEvent[], defaultTimezone?: string): string {
   const calendar = IcalGenerator({ name: "Cal" });
   for (const event of events) {
+    const zone = event.allDay ? undefined : event.timezone ?? defaultTimezone;
+    if (zone && !isValidTimezone(zone)) throw new Error(`Invalid event timezone: ${zone}`);
+    // Luxon gives the serializer real zone-aware wall times, independent of server TZ.
     const createdEvent = calendar.createEvent({
       summary: event.title,
-      start: new Date(event.start),
-      end: new Date(event.end),
+      start: zone ? DateTime.fromISO(event.start, { zone }) : new Date(event.start),
+      end: zone ? DateTime.fromISO(event.end, { zone }) : new Date(event.end),
+      timezone: zone,
       allDay: event.allDay ?? false,
       location: event.location,
       description: event.description,

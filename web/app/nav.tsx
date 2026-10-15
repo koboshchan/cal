@@ -11,28 +11,32 @@ export default async function Nav() {
 
   return (
     <>
-      <header className="flex items-center justify-between px-6 py-4 border-b">
-        <Link href="/" className="font-semibold">
-          cal
-        </Link>
-        <nav className="flex items-center gap-4">
-          {userId ? (
-            <>
-              {admin && (
-                <Link href="/admin" className="text-sm text-gray-600">
-                  Admin
-                </Link>
-              )}
-              <UserButton />
-            </>
-          ) : (
-            <>
-              <SignInButton mode="modal" />
-              <SignUpButton mode="modal" />
-            </>
-          )}
-        </nav>
-      </header>
+    <header className="cal-toolbar">
+      <a href="#main-content" className="cal-skip-link">Skip to content</a>
+      <div className="cal-toolbar-inner">
+      <Link href="/" className="cal-brand">
+        <span className="cal-mark" aria-hidden="true"><span /><span /><span /><span /></span>
+        cal
+      </Link>
+      <nav aria-label="Account" className="cal-account flex items-center gap-4">
+        {userId ? (
+          <>
+            {admin && (
+              <Link href="/admin" className="text-sm text-gray-600">
+                Admin
+              </Link>
+            )}
+            <UserButton />
+          </>
+        ) : (
+          <>
+            <SignInButton mode="modal" />
+            <SignUpButton mode="modal" />
+          </>
+        )}
+      </nav>
+      </div>
+    </header>
       {!userId && (
         <p className={styles.signupNotice}>
           Before signing up, read the <Link href="/terms">Terms</Link> and{" "}

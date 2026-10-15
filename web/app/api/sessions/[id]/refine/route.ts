@@ -1,3 +1,4 @@
+import { readJsonBody } from "@/lib/request-json";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
@@ -19,7 +20,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       );
     }
 
-    const { prompt } = Body.parse(await request.json());
+    const { prompt } = Body.parse(await readJsonBody(request));
     startRefinement(session, prompt);
     await stepSession(session);
     await persistSession(session);
