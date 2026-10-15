@@ -1,3 +1,4 @@
+import { readJsonBody } from "@/lib/request-json";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
@@ -21,7 +22,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       );
     }
 
-    const { answers } = Body.parse(await request.json());
+    const { answers } = Body.parse(await readJsonBody(request));
     answerPendingQuestions(session, answers);
     await stepSession(session);
     await persistSession(session);
