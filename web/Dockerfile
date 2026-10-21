@@ -6,7 +6,7 @@
 # newer/older V8 headers), so no compiler toolchain is needed at all.
 
 # --- builder -----------------------------------------------------------
-FROM node:24-bookworm-slim AS builder
+FROM node:24.22.1-bookworm-slim AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -16,7 +16,7 @@ COPY . .
 RUN npm run build
 
 # --- runner --------------------------------------------------------------
-FROM node:24-bookworm-slim AS runner
+FROM node:24.22.1-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
