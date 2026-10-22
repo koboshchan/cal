@@ -34,12 +34,19 @@ struct AdminView: View {
 
             Button("Save") { save() }
         }
-        .navigationTitle("Admin")
+        .navigationTitle("Provider settings")
+        .navigationBarTitleDisplayMode(.inline)
+        .overlay {
+            if loading { ProgressView("Loading provider…").padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16)) }
+        }
         .disabled(loading)
         .task { await load() }
     }
 
     private func load() async {
+        #if DEBUG
+        if UITestSupport.screen != nil { loading = false; return }
+        #endif
         do {
             let settings = try await APIClient.getSettings()
             if settings.configured {

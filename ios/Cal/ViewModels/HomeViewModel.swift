@@ -22,6 +22,16 @@ final class HomeViewModel {
     private let cache = DataCache.shared
 
     init() {
+        #if DEBUG
+        if let screen = UITestSupport.screen {
+            if screen != "empty" {
+                self.sessions = [SessionSummary(id: "fixture", title: "A little more routine", status: "done", createdAt: "2026-10-15T07:00:00Z"),
+                                 SessionSummary(id: "second", title: "School & study", status: "awaiting_input", createdAt: "2026-10-14T07:00:00Z")]
+            }
+            self.isOfflineBannerVisible = screen == "offline"
+            return
+        }
+        #endif
         // Immediately populate state with cached data so it is visible and accessible
         // on the very first frame before network refresh begins.
         self.sessions = cache.loadSessions()
@@ -32,6 +42,9 @@ final class HomeViewModel {
     /// On success, replaces the old data and updates the persistent cache.
     /// On failure, preserves the old cached data and displays the offline banner.
     func refresh() async {
+        #if DEBUG
+        if UITestSupport.screen != nil { return }
+        #endif
         isRefreshing = true
         defer { isRefreshing = false }
 
